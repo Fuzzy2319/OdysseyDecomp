@@ -1,14 +1,12 @@
 #pragma once
 
 #include <math/seadMatrix.h>
-#include <math/seadVector.h>
 
 #include "Library/HostIO/HioNode.h"
 #include "Library/Scene/IUseSceneObjHolder.h"
 #include "Library/Stage/IUseStageSwitch.h"
 
 namespace al {
-
 class AreaShape;
 class PlacementInfo;
 class AreaInitInfo;
@@ -25,18 +23,21 @@ public:
     virtual bool isInVolumeOffset(const sead::Vector3f& pos, f32 offset) const;
     SceneObjHolder* getSceneObjHolder() const override;
 
+    void validate();
+    void inValidate();
+
     PlacementInfo* getPlacementInfo() const { return mPlacementInfo; }
 
     AreaShape* getAreaShape() const { return mAreaShape; }
 
 private:
     const char* mName;
-    AreaShape* mAreaShape;
-    StageSwitchKeeper* mStageSwitchKeeper;
-    SceneObjHolder* mSceneObjHolder;
-    sead::Matrix34f mAreaTR;
-    PlacementInfo* mPlacementInfo;
-    s32 mPriority;
-    bool mIsValid;
+    AreaShape* mAreaShape = nullptr;
+    StageSwitchKeeper* mStageSwitchKeeper = nullptr;
+    SceneObjHolder* mSceneObjHolder = nullptr;
+    sead::Matrix34f mAreaTR = sead::Matrix34f::ident;
+    PlacementInfo* mPlacementInfo = nullptr;
+    s32 mPriority = -1;
+    bool mIsValid = true;
 };
 }  // namespace al
