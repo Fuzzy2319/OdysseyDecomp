@@ -5,24 +5,24 @@
 #include "Library/LiveActor/LiveActor.h"
 
 namespace al {
-class JointSpringControllerHolder;
 class CollisionPartsFilterSpecialPurpose;
+class EnemyStateBlowDown;
+class JointSpringControllerHolder;
 class WaterSurfaceFinder;
 }  // namespace al
 
 class ActorStateSandGeyser;
 class CapTargetInfo;
-class KuriboStateHack;
-class DisregardReceiver;
-class EnemyStateBlowDown;
-class EnemyStateSwoon;
-class EnemyStateReset;
-class EnemyStateWander;
-class EnemyCap;
 class CollisionMultiShape;
-class PlayerPushReceiver;
 class CollisionShapeKeeper;
+class DisregardReceiver;
+class EnemyCap;
+class EnemyStateReset;
+class EnemyStateSwoon;
+class EnemyStateWander;
+class KuriboStateHack;
 class PlayerCeilingCheck;
+class PlayerPushReceiver;
 
 class KuriboHack : public al::LiveActor {
 public:
@@ -68,7 +68,6 @@ public:
     void setShiftTypeOnGround(s32);
     void offDynamics();
     void syncRideOnPosBottomWithDefaultParam();
-    void exeWander();
     bool tryShiftDrown();
     bool tryShiftChaseOrWander();
     bool updateSink();
@@ -101,6 +100,7 @@ public:
     bool notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
                                      al::HitSensor* self);
 
+    void exeWander();
     void exeWait();
     void exeTurn();
     void exeFind();
@@ -130,7 +130,7 @@ private:
     EnemyStateWander* mEnemyStateWander = nullptr;
     ActorStateSandGeyser* mActorStateSandGeyser = nullptr;
     KuriboStateHack* mKuriboStateHack = nullptr;
-    EnemyStateBlowDown* mEnemyStateBlowDown = nullptr;
+    al::EnemyStateBlowDown* mEnemyStateBlowDown = nullptr;
     al::JointSpringControllerHolder* mJointSpringControllerHolder = nullptr;
     bool _148 = false;
     EnemyCap* mEnemyCap = nullptr;
