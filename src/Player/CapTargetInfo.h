@@ -23,6 +23,8 @@ public:
 
     void setPoseMatrix(sead::Matrix34f* mtx) { mPoseMatrix = mtx; }
 
+    void set_79(bool value) { _79 = value; }
+
 private:
     const al::LiveActor* mActor = nullptr;
     const char* mHackName = nullptr;
