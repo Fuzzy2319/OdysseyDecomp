@@ -19,6 +19,14 @@ public:
 
     void exeWait();
 
+    const sead::Vector3f& getPos() const { return mPos; }
+
+    void setPos(const sead::Vector3f& value) { mPos = value; }
+
+    const sead::Vector3f& getRot() const { return mRot; }
+
+    void setRot(const sead::Vector3f& value) { mRot = value; }
+
 private:
     sead::Vector3f mPos = sead::Vector3f::zero;
     sead::Vector3f mRot = sead::Vector3f::zero;
