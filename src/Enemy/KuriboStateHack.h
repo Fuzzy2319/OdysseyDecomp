@@ -1,5 +1,7 @@
 #pragma once
 
+#include <math/seadMatrix.h>
+
 #include "Library/Nerve/NerveStateBase.h"
 
 namespace al {

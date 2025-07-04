@@ -2,6 +2,11 @@
 
 #include "Library/Nerve/NerveStateBase.h"
 
+namespace al {
+class SensorMsg;
+class HitSensor;
+}  // namespace al
+
 class ActorStateSandGeyser : public al::ActorStateBase {
 public:
     ActorStateSandGeyser(al::LiveActor* actor);
