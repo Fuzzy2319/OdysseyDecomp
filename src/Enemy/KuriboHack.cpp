@@ -1,40 +1,45 @@
 #include "Enemy/KuriboHack.h"
 
 #include "Library/Base/StringUtil.h"
+#include "Library/Collision/Collider.h"
 #include "Library/Collision/KCollisionServer.h"
+#include "Library/Effect/EffectSystemInfo.h"
+#include "Library/Item/ItemUtil.h"
 #include "Library/Joint/JointControllerKeeper.h"
 #include "Library/Joint/JointSpringControllerHolder.h"
 #include "Library/LiveActor/ActorActionFunction.h"
 #include "Library/LiveActor/ActorAnimFunction.h"
 #include "Library/LiveActor/ActorClippingFunction.h"
+#include "Library/LiveActor/ActorCollisionFunction.h"
 #include "Library/LiveActor/ActorInitUtil.h"
 #include "Library/LiveActor/ActorModelFunction.h"
 #include "Library/LiveActor/ActorPoseUtil.h"
 #include "Library/LiveActor/ActorResourceFunction.h"
+#include "Library/LiveActor/ActorSensorUtil.h"
+#include "Library/Math/MathUtil.h"
 #include "Library/Movement/EnemyStateBlowDown.h"
+#include "Library/Nature/WaterSurfaceFinder.h"
 #include "Library/Nerve/NerveSetupUtil.h"
 #include "Library/Nerve/NerveUtil.h"
 #include "Library/Placement/PlacementFunction.h"
+#include "Library/Thread/FunctorV0M.h"
 #include "Library/Yaml/ByamlIter.h"
 #include "Library/Yaml/ByamlUtil.h"
 
+#include "Enemy/DisregardReceiver.h"
 #include "Enemy/EnemyCap.h"
 #include "Enemy/EnemyStateReset.h"
 #include "Enemy/EnemyStateSwoon.h"
 #include "Enemy/EnemyStateWander.h"
 #include "Enemy/KuriboStateHack.h"
-#include "Library/Math/MathUtil.h"
 #include "Player/CapTargetInfo.h"
+#include "Player/CollisionMultiShape.h"
 #include "Player/CollisionShapeKeeper.h"
 #include "Player/PlayerCeilingCheck.h"
 #include "Player/PlayerPushReceiver.h"
+#include "Scene/SceneEventNotifier.h"
 #include "Util/ActorStateSandGeyser.h"
 #include "Util/Hack.h"
-
-// TODO: create these headers.
-
-// #include "Enemy/DisregardReceiver.h"
-// #include "Player/CollisionMultiShape.h"
 
 namespace {
 NERVE_IMPL(KuriboHack, Wait)
@@ -65,12 +70,14 @@ NERVES_MAKE_NOSTRUCT(KuriboHack, Wait, Turn, Find, Chase, Stop, Attack, PressDow
                      Hack, RideOn, Drown, EatBind, Wander)
 }  // namespace
 
-KuriboHack::KuriboHack(const char* name) : LiveActor(name) {}
-
 static al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f, 35.0f, 2.0f,
                                                                0.97f,      120,   true};
 
+KuriboHack::KuriboHack(const char* name) : LiveActor(name) {}
+
 void KuriboHack::init(const al::ActorInitInfo& info) {
+    using KuriboHackFunctor = al::FunctorV0M<KuriboHack*, void (KuriboHack::*)()>;
+
     al::tryGetArg(&mIsGold, info, "IsGold");
     mIsGold = mIsGold || al::isEqualString("クリボーゴールド", getName());
     if (mIsGold)
@@ -92,9 +99,17 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     al::tryGetByamlV3f(&localTrans, modelResourceYamlIter, "LocalTrans");
     sead::Vector3f localRotate = {0.0f, 0.0f, 0.0f};
     al::tryGetByamlV3f(&localRotate, modelResourceYamlIter, "LocalRotate");
-    sead::Vector3f localScale;
-    localScale.setScale(localTrans, al::getScaleY(this));
-    _218.makeSRT(localScale, localRotate, localTrans);
+    //    localRotate.toEuler();
+    localTrans.setScale(localTrans, al::getScaleY(this));
+
+    sead::Mathf::sin(0.0f);
+    sead::Mathf::sin(0.0f);
+    sead::Mathf::sin(0.0f);
+    sead::Mathf::cos(0.0f);
+    sead::Mathf::cos(0.0f);
+    sead::Mathf::cos(0.0f);
+
+    _218.makeRT(localRotate, localTrans);
     mCapTargetInfo->setPoseMatrix(&_218);
 
     al::initNerve(this, &Wander, 6);
@@ -146,4 +161,58 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     al::startMtsAnim(this, "EyeReset");
     al::startAction(this, "Wait");
     mEnemyStateSwoon->enableLockOnDelay(true);
+
+    mCollisionPartsFilterSpecialPurpose = new al::CollisionPartsFilterSpecialPurpose("MoveLimit");
+    al::setColliderFilterCollisionParts(this, mCollisionPartsFilterSpecialPurpose);
+
+    mClippingRadius = al::getClippingRadius(this);
+
+    mPlayerPushReceiver = new PlayerPushReceiver(this);
+    al::invalidateHitSensor(this, "SpecialPush");
+
+    mCollisionMultiShape = new CollisionMultiShape(this, 128);
+    mCollisionShapeKeeper = new CollisionShapeKeeper(4, 16, 0);
+    f32 colliderRadius = al::getColliderRadius(this);
+    sead::Mathf::cos(sead::Mathf::pi() / 4.0f);
+    colliderRadius *= 0.7071068f /* sead::Mathf::cos(sead::Mathf::pi() / 4.0f) */;
+    sead::Vector3f local_d0 = (colliderRadius * -1.5f) * sead::Vector3f::ey;
+    sead::Vector3f local_f0;
+    local_f0.x = colliderRadius * 0.0f;
+    local_f0.y = colliderRadius * 1.0f;
+    local_f0.z = colliderRadius * 1.0f;
+    mCollisionShapeKeeper->createShapeArrow("FL", local_f0, local_d0, 0.0f, 0);
+    local_f0.x = colliderRadius * 0.0f;
+    local_f0.y = colliderRadius * -1.0f;
+    local_f0.z = colliderRadius * 1.0f;
+    mCollisionShapeKeeper->createShapeArrow("FR", local_f0, local_d0, 0.0f, 0);
+    local_f0.x = colliderRadius * 0.0f;
+    local_f0.y = colliderRadius * 1.0f;
+    local_f0.z = colliderRadius * -1.0f;
+    mCollisionShapeKeeper->createShapeArrow("BL", local_f0, local_d0, 0.0f, 0);
+    local_f0.x = colliderRadius * -0.0f;
+    local_f0.y = colliderRadius * -1.0f;
+    local_f0.z = colliderRadius * -1.0f;
+    mCollisionShapeKeeper->createShapeArrow("BR", local_f0, local_d0, 0.0f, 0);
+
+    al::hideSilhouetteModelIfShow(this);
+
+    mWaterSurfaceFinder = new al::WaterSurfaceFinder(this);
+    al::setEffectNamedMtxPtr(this, "WaterSurface", &mWaterSurfaceEffectMtx);
+    al::setEffectNamedMtxPtr(this, "SandSurface", &mSandSurfaceEffectMtx);
+
+    mDisregardReceiver = new DisregardReceiver(this, nullptr);
+
+    al::setAppearItemFactor(this, "間接攻撃", al::getHitSensor(this, "Body"));
+
+    mPlayerCeilingCheck = new PlayerCeilingCheck(getCollider()->getCollisionDirector());
+
+    al::invalidateHitSensor(this, "HipDropProbe");
+    al::setHitSensorPosPtr(this, "HipDropProbe", &mHipDropProbeSensorPos);
+    mHipDropProbeSensor = al::getHitSensor(this, "HipDropProbe");
+
+    rs::listenSnapShotModeOnOff(this, KuriboHackFunctor(this, &KuriboHack::onSnapshotMode),
+                                KuriboHackFunctor(this, &KuriboHack::offSnapshotMode));
+
+    if (!al::trySyncStageSwitchAppearAndKill(this))
+        kill();
 }
