@@ -73,6 +73,15 @@ NERVES_MAKE_NOSTRUCT(KuriboHack, Wait, Turn, Find, Chase, Stop, Attack, PressDow
 static al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f, 35.0f, 2.0f,
                                                                0.97f,      120,   true};
 
+// TODO: Move this
+f32 KuriboHack::getRideOnRowSize() {
+    return 110.0f;
+}
+
+void KuriboHack::resetRideOnPosBottomWithDefaultParam() {
+    resetRideOnPosBottom(getRideOnRowSize());
+}
+
 KuriboHack::KuriboHack(const char* name) : LiveActor(name) {}
 
 void KuriboHack::init(const al::ActorInitInfo& info) {
@@ -99,8 +108,8 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     al::tryGetByamlV3f(&localTrans, modelResourceYamlIter, "LocalTrans");
     sead::Vector3f localRotate = {0.0f, 0.0f, 0.0f};
     al::tryGetByamlV3f(&localRotate, modelResourceYamlIter, "LocalRotate");
-    //    localRotate.toEuler();
-    localTrans.setScale(localTrans, al::getScaleY(this));
+    localTrans *= al::getScaleY(this);
+    _218.makeRT(localRotate * (sead::Mathf::pi() / 180.0f), localTrans);
 
     sead::Mathf::sin(0.0f);
     sead::Mathf::sin(0.0f);
@@ -109,8 +118,10 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     sead::Mathf::cos(0.0f);
     sead::Mathf::cos(0.0f);
 
-    _218.makeRT(localRotate, localTrans);
-    mCapTargetInfo->setPoseMatrix(&_218);
+    _218.setMul({localTrans.x, localTrans.y, localTrans.z, localTrans.x, localTrans.y, localTrans.z,
+                 localTrans.x, localTrans.y, localTrans.z, 0.0f, 0.0f, 0.0f},
+                _218);
+    mCapTargetInfo->setPoseMatrix(&_1e8);
 
     al::initNerve(this, &Wander, 6);
     mEnemyStateSwoon = new EnemyStateSwoon(this, "SwoonStart", "Swoon", "SwoonEnd", false, true);
@@ -134,30 +145,34 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
 
     s32 rideOnNum = 0;
     al::tryGetArg(&rideOnNum, info, "RideOnNum");
-    _2e8.initOffset(768);
-    for (s32 i = 0; i < rideOnNum; i++) {
+    _2e8.initOffset(0x300);
+    if (rideOnNum > 0) {
         if (mEnemyCap)
             mEnemyCap->kill();
 
-        KuriboHack* kuriboHack = new KuriboHack("クリボー");
-        al::initCreateActorNoPlacementInfo(kuriboHack, info);
+        for (s32 i = 0; i < rideOnNum; i++) {
+            KuriboHack* kuriboHack = new KuriboHack("クリボー");
+            al::initCreateActorNoPlacementInfo(kuriboHack, info);
 
-        sead::Vector3f offset;
-        al::getRandomVector(&offset, 20.0f);
+            sead::Vector3f offset;
+            al::getRandomVector(&offset, 20.0f);
 
-        kuriboHack->mEnemyStateReset->setPos(al::getTrans(this) + offset);
-        kuriboHack->mEnemyStateReset->setRot(mEnemyStateReset->getRot());
+            kuriboHack->mEnemyStateReset->setPos(al::getTrans(this) + offset);
+            kuriboHack->mEnemyStateReset->setRot(mEnemyStateReset->getRot());
 
-        _2e8.insertBefore(this, kuriboHack);
-        kuriboHack->_160 = this;
-        al::copyPose(kuriboHack, this);
-        al::setNerve(kuriboHack, &RideOn);
-        al::invalidateClipping(kuriboHack);
-        al::stopDitherAnimAutoCtrl(kuriboHack);
-        al::startAction(kuriboHack, "WaitTower");
-        al::startMtsAnim(kuriboHack, "EyeReset");
+            _2e8.pushBack(kuriboHack);
+            kuriboHack->_160 = this;
+            al::copyPose(kuriboHack, this);
+            al::setNerve(kuriboHack, &RideOn);
+            al::invalidateClipping(kuriboHack);
+            al::stopDitherAnimAutoCtrl(kuriboHack);
+            al::startAction(kuriboHack, "WaitTower");
+            al::startMtsAnim(kuriboHack, "EyeReset");
+        }
+
+        resetRideOnPosBottomWithDefaultParam();
     }
-    resetRideOnPosBottomWithDefaultParam();
+
     al::startMtsAnim(this, "EyeReset");
     al::startAction(this, "Wait");
     mEnemyStateSwoon->enableLockOnDelay(true);
@@ -176,23 +191,14 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     sead::Mathf::cos(sead::Mathf::pi() / 4.0f);
     colliderRadius *= 0.7071068f /* sead::Mathf::cos(sead::Mathf::pi() / 4.0f) */;
     sead::Vector3f local_d0 = (colliderRadius * -1.5f) * sead::Vector3f::ey;
-    sead::Vector3f local_f0;
-    local_f0.x = colliderRadius * 0.0f;
-    local_f0.y = colliderRadius * 1.0f;
-    local_f0.z = colliderRadius * 1.0f;
-    mCollisionShapeKeeper->createShapeArrow("FL", local_f0, local_d0, 0.0f, 0);
-    local_f0.x = colliderRadius * 0.0f;
-    local_f0.y = colliderRadius * -1.0f;
-    local_f0.z = colliderRadius * 1.0f;
-    mCollisionShapeKeeper->createShapeArrow("FR", local_f0, local_d0, 0.0f, 0);
-    local_f0.x = colliderRadius * 0.0f;
-    local_f0.y = colliderRadius * 1.0f;
-    local_f0.z = colliderRadius * -1.0f;
-    mCollisionShapeKeeper->createShapeArrow("BL", local_f0, local_d0, 0.0f, 0);
-    local_f0.x = colliderRadius * -0.0f;
-    local_f0.y = colliderRadius * -1.0f;
-    local_f0.z = colliderRadius * -1.0f;
-    mCollisionShapeKeeper->createShapeArrow("BR", local_f0, local_d0, 0.0f, 0);
+    mCollisionShapeKeeper->createShapeArrow(
+        "FL", colliderRadius * (sead::Vector3f::ex + sead::Vector3f::ez), local_d0, 0.0f, 0);
+    mCollisionShapeKeeper->createShapeArrow(
+        "FR", colliderRadius * (sead::Vector3f::ex - sead::Vector3f::ez), local_d0, 0.0f, 0);
+    mCollisionShapeKeeper->createShapeArrow(
+        "BL", colliderRadius * (-sead::Vector3f::ex + sead::Vector3f::ez), local_d0, 0.0f, 0);
+    mCollisionShapeKeeper->createShapeArrow(
+        "BR", colliderRadius * (-sead::Vector3f::ex - sead::Vector3f::ez), local_d0, 0.0f, 0);
 
     al::hideSilhouetteModelIfShow(this);
 
@@ -214,5 +220,5 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
                                 KuriboHackFunctor(this, &KuriboHack::offSnapshotMode));
 
     if (!al::trySyncStageSwitchAppearAndKill(this))
-        kill();
+        makeActorAlive();
 }
