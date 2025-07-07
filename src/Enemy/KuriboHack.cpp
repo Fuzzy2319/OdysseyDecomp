@@ -217,3 +217,42 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     if (!al::trySyncStageSwitchAppearAndKill(this))
         makeActorAlive();
 }
+
+void KuriboHack::tryCreateEnemyCap(const al::ActorInitInfo& info) {
+    const char* capName = nullptr;
+    if (!al::tryGetStringArg(&capName, info, "CapName"))
+        return;
+
+    if (al::isEqualString(capName, ""))
+        return;
+
+    if (!al::isExistModelResourceYaml(this, "EnemyCap", nullptr))
+        return;
+
+    al::ByamlIter modelResourceYamlIter = {al::getModelResourceYaml(this, "EnemyCap", nullptr)};
+    if (!modelResourceYamlIter.isTypeArray())
+        return;
+
+    s32 size = modelResourceYamlIter.getSize();
+    for (s32 i = 0; i < size; i++) {
+        al::ByamlIter subModelResourceIter;
+        if (!modelResourceYamlIter.tryGetIterByIndex(&subModelResourceIter, i))
+            continue;
+
+        const char* name = nullptr;
+        if (!subModelResourceIter.tryGetStringByKey(&name, "Name"))
+            continue;
+
+        if (!al::isEqualString(name, capName))
+            continue;
+
+        const char* res = nullptr;
+        if (!subModelResourceIter.tryGetStringByKey(&res, "Res"))
+            return;
+
+        subModelResourceIter.tryGetBoolByKey(&mIsEyebrowOff, "EyebrowOff");
+        mEnemyCap = rs::tryCreateEnemyCap(this, info, res);
+
+        return;
+    }
+}
