@@ -52,7 +52,7 @@ public:
     bool isCapWorn() const;
     bool isEnableHack() const;
 
-    EnemyCap* tryCreateEnemyCap(const al::ActorInitInfo& info);
+    void tryCreateEnemyCap(const al::ActorInitInfo& info);
     void setNerveRideOnCommon();
     void resetRideOnPosBottomWithDefaultParam();
     void onSnapshotMode();
