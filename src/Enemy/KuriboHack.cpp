@@ -108,19 +108,13 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     al::tryGetByamlV3f(&localTrans, modelResourceYamlIter, "LocalTrans");
     sead::Vector3f localRotate = {0.0f, 0.0f, 0.0f};
     al::tryGetByamlV3f(&localRotate, modelResourceYamlIter, "LocalRotate");
-    localTrans *= al::getScaleY(this);
-    _218.makeRT(localRotate * (sead::Mathf::pi() / 180.0f), localTrans);
 
-    sead::Mathf::sin(0.0f);
-    sead::Mathf::sin(0.0f);
-    sead::Mathf::sin(0.0f);
-    sead::Mathf::cos(0.0f);
-    sead::Mathf::cos(0.0f);
-    sead::Mathf::cos(0.0f);
+    sead::Matrix34f r;
+    r.makeR(localRotate * (sead::Mathf::pi() / 180.0f));
+    sead::Matrix34f srt;
+    srt.makeSRT({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, localTrans * al::getScaleY(this));
+    _218.setMul(r, srt);
 
-    _218.setMul({localTrans.x, localTrans.y, localTrans.z, localTrans.x, localTrans.y, localTrans.z,
-                 localTrans.x, localTrans.y, localTrans.z, 0.0f, 0.0f, 0.0f},
-                _218);
     mCapTargetInfo->setPoseMatrix(&_1e8);
 
     al::initNerve(this, &Wander, 6);
@@ -156,6 +150,7 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
 
             sead::Vector3f offset;
             al::getRandomVector(&offset, 20.0f);
+            offset.y = 0.0f;
 
             kuriboHack->mEnemyStateReset->setPos(al::getTrans(this) + offset);
             kuriboHack->mEnemyStateReset->setRot(mEnemyStateReset->getRot());
