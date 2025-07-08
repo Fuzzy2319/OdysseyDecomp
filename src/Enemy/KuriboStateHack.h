@@ -20,6 +20,8 @@ class KuriboStateHack : public al::HostStateBase<KuriboHack> {
 public:
     KuriboStateHack(KuriboHack* host);
 
+    bool isSandGeyser() const;
+
 private:
     IUsePlayerHack* _20;
     HackerStateNormalMove* mHackerStateNormalMove;
