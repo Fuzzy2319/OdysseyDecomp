@@ -55,8 +55,8 @@ public:
     void tryCreateEnemyCap(const al::ActorInitInfo& info);
     void setNerveRideOnCommon();
     void resetRideOnPosBottomWithDefaultParam();
-    void onSnapshotMode();
-    void offSnapshotMode();
+    void onSnapShotMode();
+    void offSnapShotMode();
     void onDynamics();
     void detach(KuriboHack* kuribo);
     void solveCollisionInHacking(const sead::Vector3f&);
