@@ -32,6 +32,7 @@
 #include "Enemy/EnemyStateSwoon.h"
 #include "Enemy/EnemyStateWander.h"
 #include "Enemy/KuriboStateHack.h"
+#include "Npc/SphinxQuizRouteKillExecutor.h"
 #include "Player/CapTargetInfo.h"
 #include "Player/CollisionMultiShape.h"
 #include "Player/CollisionShapeKeeper.h"
@@ -76,10 +77,6 @@ static al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f
 // TODO: Move this
 f32 KuriboHack::getRideOnRowSize() {
     return 110.0f;
-}
-
-void KuriboHack::resetRideOnPosBottomWithDefaultParam() {
-    resetRideOnPosBottom(getRideOnRowSize());
 }
 
 KuriboHack::KuriboHack(const char* name) : LiveActor(name) {}
@@ -211,8 +208,8 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
     al::setHitSensorPosPtr(this, "HipDropProbe", &mHipDropProbeSensorPos);
     mHipDropProbeSensor = al::getHitSensor(this, "HipDropProbe");
 
-    rs::listenSnapShotModeOnOff(this, KuriboHackFunctor(this, &KuriboHack::onSnapshotMode),
-                                KuriboHackFunctor(this, &KuriboHack::offSnapshotMode));
+    rs::listenSnapShotModeOnOff(this, KuriboHackFunctor(this, &KuriboHack::onSnapShotMode),
+                                KuriboHackFunctor(this, &KuriboHack::offSnapShotMode));
 
     if (!al::trySyncStageSwitchAppearAndKill(this))
         makeActorAlive();
@@ -255,4 +252,70 @@ void KuriboHack::tryCreateEnemyCap(const al::ActorInitInfo& info) {
 
         return;
     }
+}
+
+void KuriboHack::setNerveRideOnCommon() {
+    al::setNerve(this, &RideOn);
+    al::invalidateClipping(this);
+    al::stopDitherAnimAutoCtrl(this);
+}
+
+void KuriboHack::resetRideOnPosBottomWithDefaultParam() {
+    resetRideOnPosBottom(getRideOnRowSize());
+}
+
+void KuriboHack::onSnapShotMode() {
+    if (!al::isNerve(this, &RideOn))
+        return;
+
+    al::restartDitherAnimAutoCtrl(this);
+}
+
+void KuriboHack::offSnapShotMode() {
+    if (!al::isNerve(this, &RideOn))
+        return;
+
+    al::stopDitherAnimAutoCtrl(this);
+}
+
+void KuriboHack::initAfterPlacement() {
+    rs::tryRegisterSphinxQuizRouteKillSensorAfterPlacement(al::getHitSensor(this, "Body"));
+}
+
+void KuriboHack::makeActorAlive() {
+    al::LiveActor::makeActorAlive();
+    onDynamics();
+    resetRideOnPosBottomWithDefaultParam();
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+        kuriboHack->makeActorAlive();
+}
+
+void KuriboHack::onDynamics() {
+    if (!mJointSpringControllerHolder || _148)
+        return;
+
+    mJointSpringControllerHolder->resetControlAll();
+    mJointSpringControllerHolder->onControlAll();
+    _148 = true;
+}
+
+void KuriboHack::makeActorDead() {
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+        kuriboHack->makeActorDead();
+    al::LiveActor::makeActorDead();
+}
+
+void KuriboHack::appear() {
+    al::LiveActor::appear();
+    al::validateHitSensors(this);
+    al::invalidateHitSensor(this, "SpecialPush");
+    al::invalidateHitSensor(this, "HipDropProbe");
+    al::setNerve(this, &Wander);
+}
+
+void KuriboHack::kill() {
+    if (al::isNerve(this, &Reset) && mEnemyStateReset->isRevive())
+        return;
+
+    al::LiveActor::kill();
 }
