@@ -2,6 +2,7 @@
 
 #include "Library/Base/StringUtil.h"
 #include "Library/Collision/Collider.h"
+#include "Library/Collision/CollisionPartsKeeperUtil.h"
 #include "Library/Collision/KCollisionServer.h"
 #include "Library/Effect/EffectSystemInfo.h"
 #include "Library/Item/ItemUtil.h"
@@ -9,6 +10,7 @@
 #include "Library/Joint/JointSpringControllerHolder.h"
 #include "Library/LiveActor/ActorActionFunction.h"
 #include "Library/LiveActor/ActorAnimFunction.h"
+#include "Library/LiveActor/ActorAreaFunction.h"
 #include "Library/LiveActor/ActorClippingFunction.h"
 #include "Library/LiveActor/ActorCollisionFunction.h"
 #include "Library/LiveActor/ActorInitUtil.h"
@@ -35,6 +37,7 @@
 #include "Enemy/KuriboStateHack.h"
 #include "Npc/SphinxQuizRouteKillExecutor.h"
 #include "Player/CapTargetInfo.h"
+#include "Player/CollidedShapeResult.h"
 #include "Player/CollisionMultiShape.h"
 #include "Player/CollisionShapeKeeper.h"
 #include "Player/PlayerCeilingCheck.h"
@@ -403,4 +406,59 @@ void KuriboHack::detach(KuriboHack* kuribo) {
 
         return;
     }
+}
+
+// NON_MATCHING
+void KuriboHack::control() {
+    _1c8 = false;
+    mHackDamageFrame = sead::Mathi::clampMin(mHackDamageFrame - 1, 0);
+    _1ac = sead::Mathi::clampMin(_1ac - 1, 0);
+    _1b8 = sead::Mathi::clampMin(_1b8 - 1, 0);
+    _25c = sead::Mathi::clampMin(_25c - 1, 0);
+
+    if (_25c == 0)
+        al::invalidateHitSensor(this, "HipDropProbe");
+
+    al::updateMaterialCodeWet(this, al::isInAreaObj(this, "WetArea"));
+    mWaterSurfaceFinder->update(al::getTrans(this), sead::Vector3f::ey, 80.0f);
+    if (mWaterSurfaceFinder->isFoundSurface()) {
+        al::makeMtxR(&mWaterSurfaceEffectMtx, this);
+        sead::Vector3f trans = al::getTrans(this);
+        mWaterSurfaceEffectMtx.setTranslation(
+            {trans.x, mWaterSurfaceFinder->getSurfacePosition().y, trans.z});
+    }
+    if (al::isCollidedGroundFloorCode(this, "SandSink")) {
+        al::makeMtxR(&mSandSurfaceEffectMtx, this);
+        sead::Vector3f trans = al::getTrans(this);
+        mSandSurfaceEffectMtx.setTranslation(
+            {trans.x, trans.y + (al::getColliderOffsetY(this) - al::getColliderRadius(this)),
+             trans.z});
+    }
+    if (al::isNerve(this, &RideOn) && _160)
+        al::setModelAlphaMask(this, al::getModelAlphaMask(_160));
+}
+
+// NON_MATCHING
+bool KuriboHack::checkSandSinkPrecisely() const {
+    if (!al::isCollidedGroundFloorCode(this, "SandSink"))
+        return false;
+
+    mCollisionShapeKeeper->clearResult();
+    sead::Vector3f colliderPos;
+    al::calcColliderPos(&colliderPos, this);
+    sead::Matrix34f local_70;
+    local_70.setInverseTranspose(*getBaseMtx());
+    local_70.setTranslation(colliderPos);
+    mCollisionMultiShape->check(mCollisionShapeKeeper, &local_70, 1.0f, al::getVelocity(this),
+                                nullptr);
+
+    s32 numCollideResult = mCollisionShapeKeeper->getNumCollideResult();
+    for (s32 i = 0; i < numCollideResult; i++)
+        if (al::isFloorCode(mCollisionShapeKeeper->getCollidedShapeResult(i)
+                                ->getArrowHitInfo()
+                                .hitInfo->triangle,
+                            "SandSink"))
+            return false;
+
+    return true;
 }
