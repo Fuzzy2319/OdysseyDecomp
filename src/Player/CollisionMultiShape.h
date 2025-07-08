@@ -24,6 +24,9 @@ class CollisionMultiShape {
 public:
     CollisionMultiShape(const al::IUseCollision* collisionUser, s32);
 
+    bool check(CollisionShapeKeeper*, const sead::Matrix34f*, f32, const sead::Vector3f&,
+               const al::CollisionPartsFilterBase*);
+
 private:
     const al::IUseCollision* _0;
     al::SphereCheckInfo _8;
