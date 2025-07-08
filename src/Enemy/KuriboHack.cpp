@@ -13,6 +13,7 @@
 #include "Library/LiveActor/ActorCollisionFunction.h"
 #include "Library/LiveActor/ActorInitUtil.h"
 #include "Library/LiveActor/ActorModelFunction.h"
+#include "Library/LiveActor/ActorMovementFunction.h"
 #include "Library/LiveActor/ActorPoseUtil.h"
 #include "Library/LiveActor/ActorResourceFunction.h"
 #include "Library/LiveActor/ActorSensorUtil.h"
@@ -318,4 +319,90 @@ void KuriboHack::kill() {
         return;
 
     al::LiveActor::kill();
+}
+
+// NON_MATCHING
+void KuriboHack::movement() {
+    if (al::isNerve(this, &RideOn) && _2e0)
+        return;
+
+    al::LiveActor::movement();
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
+        if (!al::isNerve(&*kuriboHack, &RideOn))
+            continue;
+
+        kuriboHack->_2e0 = false;
+        kuriboHack->movement();
+        kuriboHack->_2e0 = true;
+        if (_2e8.isEmpty())
+            break;
+    }
+
+    if (!al::isOnGround(this, 0) && !al::isNerve(this, &SandGeyser) &&
+        (!al::isNerve(this, &Hack) || !mKuriboStateHack->isSandGeyser())) {
+        for (auto it = _2e8.begin(); it != _2e8.end(); ++it) {
+            KuriboHack* kuriboHack = &*it;
+            asm("" : "=r"(kuriboHack) : "0"(kuriboHack));
+
+            if (!al::isOnGround(kuriboHack, 0))
+                continue;
+
+            sead::Vector3f colliderPos;
+            al::calcColliderPos(&colliderPos, kuriboHack);
+            sead::Vector3f diff = al::getCollidedGroundPos(kuriboHack) - colliderPos;
+            if (sead::Mathf::abs(diff.y) <= sead::Mathf::abs(diff.x) ||
+                sead::Mathf::abs(diff.y) <= sead::Mathf::abs(diff.z))
+                continue;
+
+            if (kuriboHack)
+                detach(kuriboHack);
+
+            break;
+        }
+    }
+
+    if (!al::isNerve(this, &Hack))
+        return;
+
+    _1cc = _1e8.getTranslation();
+}
+
+// NON_MATCHING
+void KuriboHack::detach(KuriboHack* kuribo) {
+    f32 angle = 0.0f;
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
+        if (kuriboHack->_160) {
+            kuriboHack->_160->_2e8.erase(&*kuriboHack);
+            al::showModelIfHide(&*kuriboHack);
+        }
+
+        kuriboHack->_160 = nullptr;
+        kuriboHack->_1ac = 30;
+
+        sead::Vector3f velocity;
+        velocity.set({0.0f, 0.0f, 10.0f});
+        sead::Quatf quat;
+        al::makeQuatYDegree(&quat, angle);
+        velocity.setRotated(quat, velocity);
+        al::setVelocity(&*kuriboHack, velocity);
+
+        kuriboHack->_1bc = al::getTrans(this).y;
+
+        al::setNerve(&*kuriboHack, &WaitHack);
+
+        if (&*kuriboHack == kuribo) {
+            sead::Vector3f t;
+            t.set(al::getTrans(&*kuriboHack));
+            sead::Quatf q;
+            q.set(al::getQuat(&*kuriboHack));
+            al::copyPose(&*kuriboHack, this);
+            al::resetPosition(&*kuriboHack);
+            al::setQuat(this, q);
+            al::resetPosition(this, t);
+
+            return;
+        }
+
+        angle += 50.0f;
+    }
 }
