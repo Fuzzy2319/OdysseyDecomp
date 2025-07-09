@@ -29,6 +29,8 @@ public:
 
     bool isRevive() const { return mIsRevive; }
 
+    void setRevive(bool value) { mIsRevive = value; }
+
 private:
     sead::Vector3f mPos = sead::Vector3f::zero;
     sead::Vector3f mRot = sead::Vector3f::zero;

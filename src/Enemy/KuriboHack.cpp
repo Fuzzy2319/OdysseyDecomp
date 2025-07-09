@@ -47,32 +47,32 @@
 #include "Util/Hack.h"
 
 namespace {
-NERVE_IMPL(KuriboHack, Wait)
 NERVE_IMPL(KuriboHack, Wander)
+NERVE_IMPL(KuriboHack, WaitHack)
+NERVE_IMPL(KuriboHack, Reset)
+NERVE_IMPL(KuriboHack, BlowDown)
+NERVE_IMPL(KuriboHack, SandGeyser)
+NERVE_END_IMPL(KuriboHack, Hack)
+NERVE_END_IMPL(KuriboHack, RideOn)
+NERVE_IMPL(KuriboHack, PressDown)
+NERVE_IMPL(KuriboHack, EatBind)
 NERVE_IMPL(KuriboHack, Turn)
 NERVE_IMPL(KuriboHack, Find)
 NERVE_IMPL(KuriboHack, Chase)
 NERVE_IMPL(KuriboHack, Stop)
 NERVE_IMPL(KuriboHack, Attack)
-NERVE_IMPL(KuriboHack, PressDown)
-NERVE_IMPL(KuriboHack, BlowDown)
-NERVE_IMPL(KuriboHack, DamageCap)
-NERVE_IMPL(KuriboHack, Fall)
+NERVE_IMPL(KuriboHack, Wait)
 NERVE_IMPL(KuriboHack, Land)
-NERVE_IMPL(KuriboHack, Sink)
-NERVE_IMPL(KuriboHack, Slide)
-NERVE_IMPL(KuriboHack, Reset)
-NERVE_IMPL(KuriboHack, SandGeyser)
-NERVE_IMPL(KuriboHack, WaitHack)
 NERVE_IMPL(KuriboHack, TowerHackEnd)
-NERVE_IMPL(KuriboHack, Hack)
-NERVE_IMPL(KuriboHack, RideOn)
+NERVE_IMPL(KuriboHack, Sink)
+NERVE_IMPL(KuriboHack, Fall)
+NERVE_IMPL(KuriboHack, Slide)
+NERVE_IMPL(KuriboHack, DamageCap)
 NERVE_IMPL(KuriboHack, Drown)
-NERVE_IMPL(KuriboHack, EatBind)
 
-NERVES_MAKE_NOSTRUCT(KuriboHack, Wait, Turn, Find, Chase, Stop, Attack, PressDown, BlowDown,
-                     DamageCap, Fall, Land, Sink, Slide, Reset, SandGeyser, WaitHack, TowerHackEnd,
-                     Hack, RideOn, Drown, EatBind, Wander)
+NERVES_MAKE_STRUCT(KuriboHack, Wander, WaitHack, Reset, BlowDown, SandGeyser, Hack, RideOn,
+                   PressDown, EatBind, Turn, Find, Chase, Stop, Attack, Wait, Land, TowerHackEnd,
+                   Sink, Fall, Slide, DamageCap, Drown)
 }  // namespace
 
 static al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f, 35.0f, 2.0f,
@@ -118,21 +118,21 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
 
     mCapTargetInfo->setPoseMatrix(&_1e8);
 
-    al::initNerve(this, &Wander, 6);
+    al::initNerve(this, &NrvKuriboHack.Wander, 6);
     mEnemyStateSwoon = new EnemyStateSwoon(this, "SwoonStart", "Swoon", "SwoonEnd", false, true);
     mEnemyStateSwoon->initParams(150, nullptr);
-    al::initNerveState(this, mEnemyStateSwoon, &WaitHack, "気絶");
+    al::initNerveState(this, mEnemyStateSwoon, &NrvKuriboHack.WaitHack, "気絶");
     mEnemyStateReset = new EnemyStateReset(this, info, nullptr);
-    al::initNerveState(this, mEnemyStateReset, &Reset, "リセット");
+    al::initNerveState(this, mEnemyStateReset, &NrvKuriboHack.Reset, "リセット");
     mEnemyStateWander = new EnemyStateWander(this, "Walk");
-    al::initNerveState(this, mEnemyStateWander, &Wander, "さんぽ");
+    al::initNerveState(this, mEnemyStateWander, &NrvKuriboHack.Wander, "さんぽ");
     mEnemyStateBlowDown =
         new al::EnemyStateBlowDown(this, &gEnemyStateBlowDownParam, "吹き飛び状態");
-    al::initNerveState(this, mEnemyStateBlowDown, &BlowDown, "吹き飛び");
+    al::initNerveState(this, mEnemyStateBlowDown, &NrvKuriboHack.BlowDown, "吹き飛び");
     mActorStateSandGeyser = new ActorStateSandGeyser(this);
-    al::initNerveState(this, mActorStateSandGeyser, &SandGeyser, "砂の間欠泉");
+    al::initNerveState(this, mActorStateSandGeyser, &NrvKuriboHack.SandGeyser, "砂の間欠泉");
     mKuriboStateHack = new KuriboStateHack(this);
-    al::initNerveState(this, mKuriboStateHack, &Hack, "憑依");
+    al::initNerveState(this, mKuriboStateHack, &NrvKuriboHack.Hack, "憑依");
 
     al::initJointControllerKeeper(this, 2);
     mJointSpringControllerHolder = new al::JointSpringControllerHolder();
@@ -159,7 +159,7 @@ void KuriboHack::init(const al::ActorInitInfo& info) {
             _2e8.pushBack(kuriboHack);
             kuriboHack->_160 = this;
             al::copyPose(kuriboHack, this);
-            al::setNerve(kuriboHack, &RideOn);
+            al::setNerve(kuriboHack, &NrvKuriboHack.RideOn);
             al::invalidateClipping(kuriboHack);
             al::stopDitherAnimAutoCtrl(kuriboHack);
             al::startAction(kuriboHack, "WaitTower");
@@ -259,7 +259,7 @@ void KuriboHack::tryCreateEnemyCap(const al::ActorInitInfo& info) {
 }
 
 void KuriboHack::setNerveRideOnCommon() {
-    al::setNerve(this, &RideOn);
+    al::setNerve(this, &NrvKuriboHack.RideOn);
     al::invalidateClipping(this);
     al::stopDitherAnimAutoCtrl(this);
 }
@@ -269,14 +269,14 @@ void KuriboHack::resetRideOnPosBottomWithDefaultParam() {
 }
 
 void KuriboHack::onSnapShotMode() {
-    if (!al::isNerve(this, &RideOn))
+    if (!al::isNerve(this, &NrvKuriboHack.RideOn))
         return;
 
     al::restartDitherAnimAutoCtrl(this);
 }
 
 void KuriboHack::offSnapShotMode() {
-    if (!al::isNerve(this, &RideOn))
+    if (!al::isNerve(this, &NrvKuriboHack.RideOn))
         return;
 
     al::stopDitherAnimAutoCtrl(this);
@@ -287,7 +287,7 @@ void KuriboHack::initAfterPlacement() {
 }
 
 void KuriboHack::makeActorAlive() {
-    al::LiveActor::makeActorAlive();
+    LiveActor::makeActorAlive();
     onDynamics();
     resetRideOnPosBottomWithDefaultParam();
     for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
@@ -306,31 +306,31 @@ void KuriboHack::onDynamics() {
 void KuriboHack::makeActorDead() {
     for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
         kuriboHack->makeActorDead();
-    al::LiveActor::makeActorDead();
+    LiveActor::makeActorDead();
 }
 
 void KuriboHack::appear() {
-    al::LiveActor::appear();
+    LiveActor::appear();
     al::validateHitSensors(this);
     al::invalidateHitSensor(this, "SpecialPush");
     al::invalidateHitSensor(this, "HipDropProbe");
-    al::setNerve(this, &Wander);
+    al::setNerve(this, &NrvKuriboHack.Wander);
 }
 
 void KuriboHack::kill() {
-    if (al::isNerve(this, &Reset) && mEnemyStateReset->isRevive())
+    if (al::isNerve(this, &NrvKuriboHack.Reset) && mEnemyStateReset->isRevive())
         return;
 
-    al::LiveActor::kill();
+    LiveActor::kill();
 }
 
 void KuriboHack::movement() {
-    if (al::isNerve(this, &RideOn) && _2e0)
+    if (al::isNerve(this, &NrvKuriboHack.RideOn) && _2e0)
         return;
 
-    al::LiveActor::movement();
+    LiveActor::movement();
     for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
-        if (!al::isNerve(kuriboHack, &RideOn))
+        if (!al::isNerve(kuriboHack, &NrvKuriboHack.RideOn))
             continue;
 
         kuriboHack->_2e0 = false;
@@ -340,8 +340,8 @@ void KuriboHack::movement() {
             break;
     }
 
-    if (!al::isOnGround(this, 0) && !al::isNerve(this, &SandGeyser) &&
-        (!al::isNerve(this, &Hack) || !mKuriboStateHack->isSandGeyser())) {
+    if (!al::isOnGround(this, 0) && !al::isNerve(this, &NrvKuriboHack.SandGeyser) &&
+        (!al::isNerve(this, &NrvKuriboHack.Hack) || !mKuriboStateHack->isSandGeyser())) {
         for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
             if (!al::isOnGround(kuriboHack, 0))
                 continue;
@@ -359,7 +359,7 @@ void KuriboHack::movement() {
         }
     }
 
-    if (!al::isNerve(this, &Hack))
+    if (!al::isNerve(this, &NrvKuriboHack.Hack))
         return;
 
     _1cc = _1e8.getTranslation();
@@ -385,7 +385,7 @@ void KuriboHack::detach(KuriboHack* kuribo) {
 
         kuriboHack->_1bc = al::getTrans(this).y;
 
-        al::setNerve(kuriboHack, &WaitHack);
+        al::setNerve(kuriboHack, &NrvKuriboHack.WaitHack);
 
         if (kuriboHack != kuribo) {
             angle += 50.0f;
@@ -432,7 +432,7 @@ void KuriboHack::control() {
             {trans.x, trans.y + (al::getColliderOffsetY(this) - al::getColliderRadius(this)),
              trans.z});
     }
-    if (al::isNerve(this, &RideOn) && _160)
+    if (al::isNerve(this, &NrvKuriboHack.RideOn) && _160)
         al::setModelAlphaMask(this, al::getModelAlphaMask(_160));
 }
 
@@ -480,16 +480,17 @@ void KuriboHack::pushFrom(KuriboHack* kuribo, const sead::Vector3f& up) {
 }
 
 void KuriboHack::calcAnim() {
-    if (al::isNerve(this, &RideOn) && _2e0)
+    if (al::isNerve(this, &NrvKuriboHack.RideOn) && _2e0)
         return;
 
-    if ((!al::isNerve(this, &Hack) && (!al::isNerve(this, &RideOn) || !al::isNerve(_160, &Hack))) ||
+    if ((!al::isNerve(this, &NrvKuriboHack.Hack) &&
+         (!al::isNerve(this, &NrvKuriboHack.RideOn) || !al::isNerve(_160, &NrvKuriboHack.Hack))) ||
         al::isHideModel(this))
         al::hideModelIfShow(this);
     else
         al::showModelIfHide(this);
 
-    al::LiveActor::calcAnim();
+    LiveActor::calcAnim();
     updateCapLockOnMtx();
 
     if (!mKuriboStateHack->isDead())
@@ -500,4 +501,61 @@ void KuriboHack::calcAnim() {
         kuriboHack->calcAnim();
         kuriboHack->_2e0 = true;
     }
+}
+
+void KuriboHack::updateCapLockOnMtx() {
+    KuriboHack* kuriboHack;
+    if (al::isNerve(this, &NrvKuriboHack.Hack) && _2e8.isEmpty()) {
+        kuriboHack = this;
+    } else {
+        if (!al::isNerve(this, &NrvKuriboHack.RideOn))
+            return;
+
+        if (!al::isNerve(_160, &NrvKuriboHack.Hack))
+            return;
+
+        if ((_160->_2e8.isEmpty() ? _160 : _160->_2e8.back()) != this)
+            return;
+
+        kuriboHack = _160;
+    }
+
+    const sead::Matrix34f* mtx = mJointName ? al::getJointMtxPtr(this, mJointName) : getBaseMtx();
+    sead::Matrix34f local_60;
+    local_60 = *mtx;
+    al::normalize(&local_60);
+    kuriboHack->_1e8.setMul(local_60, _218);
+}
+
+void KuriboHack::startClipped() {
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+        kuriboHack->forceStartClipped();
+
+    forceStartClipped();
+}
+
+void KuriboHack::forceStartClipped() {
+    LiveActor::startClipped();
+}
+
+void KuriboHack::endClipped() {
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+        kuriboHack->endClipped();  // wtf
+
+    LiveActor::endClipped();
+}
+
+void KuriboHack::appearFall() {
+    LiveActor::appear();
+    al::validateHitSensors(this);
+    al::invalidateHitSensor(this, "SpecialPush");
+    al::invalidateHitSensor(this, "HipDropProbe");
+    al::startVisAnim(this, "HackOffCapOff");
+    al::startMtpAnim(this, "Kuribo");
+    al::startMtsAnim(this, "EyeReset");
+    al::setNerve(this, &NrvKuriboHack.Fall);
+}
+
+void KuriboHack::noRevive() {
+    mEnemyStateReset->setRevive(false);
 }
