@@ -60,7 +60,7 @@ public:
     void onDynamics();
     void detach(KuriboHack* kuribo);
     void solveCollisionInHacking(const sead::Vector3f&);
-    void pushFrom(KuriboHack* kuribo, const sead::Vector3f&);
+    void pushFrom(KuriboHack* kuribo, const sead::Vector3f& up);
     void updateCapLockOnMtx();
     void forceStartClipped();
     void appearFall();
