@@ -324,13 +324,12 @@ void KuriboHack::kill() {
     al::LiveActor::kill();
 }
 
-// NON_MATCHING
 void KuriboHack::movement() {
     if (al::isNerve(this, &RideOn) && _2e0)
         return;
 
     al::LiveActor::movement();
-    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
+    for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
         if (!al::isNerve(kuriboHack, &RideOn))
             continue;
 
@@ -366,10 +365,9 @@ void KuriboHack::movement() {
     _1cc = _1e8.getTranslation();
 }
 
-// NON_MATCHING
 void KuriboHack::detach(KuriboHack* kuribo) {
     f32 angle = 0.0f;
-    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
+    for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
         if (kuriboHack->_160) {
             kuriboHack->_160->_2e8.erase(kuriboHack);
             al::showModelIfHide(kuriboHack);
@@ -438,7 +436,6 @@ void KuriboHack::control() {
         al::setModelAlphaMask(this, al::getModelAlphaMask(_160));
 }
 
-// NON_MATCHING
 bool KuriboHack::checkSandSinkPrecisely() const {
     if (!al::isCollidedGroundFloorCode(this, "SandSink"))
         return false;
@@ -447,18 +444,60 @@ bool KuriboHack::checkSandSinkPrecisely() const {
     sead::Vector3f colliderPos;
     al::calcColliderPos(&colliderPos, this);
     sead::Matrix34f local_70;
-    local_70.setInverseTranspose(*getBaseMtx());
+    local_70 = *getBaseMtx();
     local_70.setTranslation(colliderPos);
     mCollisionMultiShape->check(mCollisionShapeKeeper, &local_70, 1.0f, al::getVelocity(this),
                                 nullptr);
 
     s32 numCollideResult = mCollisionShapeKeeper->getNumCollideResult();
     for (s32 i = 0; i < numCollideResult; i++)
-        if (al::isFloorCode(mCollisionShapeKeeper->getCollidedShapeResult(i)
-                                ->getArrowHitInfo()
-                                .hitInfo->triangle,
-                            "SandSink"))
+        if (!al::isFloorCode(
+                mCollisionShapeKeeper->getCollidedShapeResult(i)->getArrowHitInfo().hitInfo.data(),
+                "SandSink"))
             return false;
 
     return true;
+}
+
+// void FUN_710014d2ac(KuriboHack *param_1,KuriboHack **param_2,OffsetList *param_3,bool param_4) {}
+// void FUN_710014d390(KuriboHack *param_1,HitSensor *param_2) {}
+// void FUN_710014d440(KuriboHack *param_1,EnemyStateBlowDown *param_2,KuriboHack **param_3,
+//                     OffsetList *param_4) {}
+// void KuriboHack::updateCollider() {}
+// void KuriboHack::solveCollisionInHacking(const sead::Vector3f&) {}
+
+// NON_MATCHING regswap https://decomp.me/scratch/GObFz
+void KuriboHack::pushFrom(KuriboHack* kuribo, const sead::Vector3f& up) {
+    sead::Vector3f gravity = -up;
+    if (!al::tryNormalizeOrZero(&gravity))
+        return;
+
+    for (auto kuriboHack = _2e8.begin(kuribo); kuriboHack != _2e8.end(); --kuriboHack)
+        kuriboHack->mPlayerPushReceiver->receiveForceDirect(up);
+
+    mPlayerPushReceiver->receiveForceDirect(up);
+    al::limitVelocityDirSign(this, gravity, 0.0f);
+}
+
+void KuriboHack::calcAnim() {
+    if (al::isNerve(this, &RideOn) && _2e0)
+        return;
+
+    if ((!al::isNerve(this, &Hack) && (!al::isNerve(this, &RideOn) || !al::isNerve(_160, &Hack))) ||
+        al::isHideModel(this))
+        al::hideModelIfShow(this);
+    else
+        al::showModelIfHide(this);
+
+    al::LiveActor::calcAnim();
+    updateCapLockOnMtx();
+
+    if (!mKuriboStateHack->isDead())
+        mKuriboStateHack->calcAnim();
+
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack) {
+        kuriboHack->_2e0 = false;
+        kuriboHack->calcAnim();
+        kuriboHack->_2e0 = true;
+    }
 }

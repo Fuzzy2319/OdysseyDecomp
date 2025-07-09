@@ -11,6 +11,7 @@ struct HitInfo;
 struct ArrowHitInfo;
 
 bool isFloorCode(const Triangle&, const char*);
+bool isFloorCode(const HitInfo*, const char*);
 }  // namespace al
 
 namespace alCollisionUtil {
