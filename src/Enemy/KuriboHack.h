@@ -74,8 +74,6 @@ public:
     void clearSink();
     void invalidateHackDamage();
     void shiftWaitHack();
-    void endHack();
-    void endRideOn();
     void prepareKillByShineGet();
     bool receiveMsgHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
     bool receiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other,
@@ -119,7 +117,9 @@ public:
     void exeWaitHack();
     void exeTowerHackEnd();
     void exeHack();
+    void endHack();
     void exeRideOn();
+    void endRideOn();
     void exeDrown();
     void exeEatBind();
 
