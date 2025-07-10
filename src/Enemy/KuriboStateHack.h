@@ -24,6 +24,8 @@ public:
 
     bool isSandGeyser() const;
 
+    bool get_c0() const { return _c0; }
+
 private:
     IUsePlayerHack* _20;
     HackerStateNormalMove* mHackerStateNormalMove;
