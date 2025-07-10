@@ -75,12 +75,19 @@ public:
     void invalidateHackDamage();
     void shiftWaitHack();
     void prepareKillByShineGet();
-    bool receiveMsgHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool receiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other,
-                            al::HitSensor* self);
-    bool receiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool receiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool receiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other,
+                             al::HitSensor* self);
+    bool tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other,
+                               al::HitSensor* self);
+    bool tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
+                             al::HitSensor* self);
+    bool tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other,
+                              al::HitSensor* self);
+    bool tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
+                                     al::HitSensor* self);
     void transferGroup(sead::OffsetList<KuriboHack>* dst);
     void eraseFromHost();
     void notifyJumpSink(f32);
@@ -90,13 +97,9 @@ public:
     void startRideOnRotation();
     void applyRideOnQuat(const sead::Quatf& quat);
     bool isInvalidHackDamage() const;
-    void validateHipDropProbe(al::HitSensor*);
+    void validateHipDropProbe(al::HitSensor* hitSensor);
     void trySetHipDropActor(const al::SensorMsg* message, al::HitSensor* other);
     void addCapToHackDemo();
-    bool tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
-                                     al::HitSensor* self);
 
     void exeWander();
     void exeWait();
@@ -135,7 +138,7 @@ private:
     bool _148 = false;
     EnemyCap* mEnemyCap = nullptr;
     bool mIsEyebrowOff = false;
-    KuriboHack* _160 = nullptr;
+    KuriboHack* mHost = nullptr;
     bool mIsGold = false;
     s32 _16c = 0;
     al::CollisionPartsFilterSpecialPurpose* mCollisionPartsFilterSpecialPurpose = nullptr;
@@ -146,7 +149,7 @@ private:
     CollisionShapeKeeper* mCollisionShapeKeeper = nullptr;
     f32 _1a0 = 0.0f;
     u32 _1a4 = 0;
-    s32 mRideOnRotationFrame = 0;
+    u32 mRideOnRotationFrame = 0;
     s32 _1ac = 0;
     u32 _1b0 = 0;
     s32 mTypeOnGround = 1;
@@ -170,8 +173,8 @@ private:
     sead::Matrix34f mSandSurfaceEffectMtx = sead::Matrix34f::ident;
     bool _2e0 = true;
     sead::OffsetList<KuriboHack> _2e8 = {};
-    void* padding7 = nullptr;
-    void* padding8 = nullptr;
+    void* padding2 = nullptr;
+    void* padding3 = nullptr;
     DisregardReceiver* mDisregardReceiver = nullptr;
     u32 _318 = 0;
 };
