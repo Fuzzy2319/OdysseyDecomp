@@ -69,7 +69,7 @@ public:
     void offDynamics();
     void syncRideOnPosBottomWithDefaultParam();
     bool tryShiftDrown();
-    bool tryShiftChaseOrWander();
+    __attribute__((noinline)) bool tryShiftChaseOrWander();
     bool updateSink();
     void clearSink();
     void invalidateHackDamage();
@@ -149,7 +149,7 @@ private:
     s32 mRideOnRotationFrame = 0;
     s32 _1ac = 0;
     u32 _1b0 = 0;
-    s32 mShiftTypeOnGround = 1;
+    s32 mTypeOnGround = 1;
     s32 _1b8 = 0;
     f32 _1bc = 0.0f;
     PlayerCeilingCheck* mPlayerCeilingCheck = nullptr;
