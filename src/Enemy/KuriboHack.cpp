@@ -25,6 +25,7 @@
 #include "Library/Nerve/NerveSetupUtil.h"
 #include "Library/Nerve/NerveUtil.h"
 #include "Library/Placement/PlacementFunction.h"
+#include "Library/Player/PlayerUtil.h"
 #include "Library/Thread/FunctorV0M.h"
 #include "Library/Yaml/ByamlIter.h"
 #include "Library/Yaml/ByamlUtil.h"
@@ -45,6 +46,7 @@
 #include "Scene/SceneEventNotifier.h"
 #include "Util/ActorStateSandGeyser.h"
 #include "Util/Hack.h"
+#include "Util/PlayerUtil.h"
 
 namespace {
 NERVE_IMPL(KuriboHack, Wander)
@@ -558,4 +560,111 @@ void KuriboHack::appearFall() {
 
 void KuriboHack::noRevive() {
     mEnemyStateReset->setRevive(false);
+}
+
+void FUN_710014e3f0(KuriboHack*, const sead::OffsetList<KuriboHack>&, const char*, const char*);
+
+void KuriboHack::exeWait() {
+    if (al::isFirstStep(this)) {
+        FUN_710014e3f0(this, _2e8, "Wait", nullptr);
+        setShiftTypeOnGround(1);
+
+        offDynamics();
+    }
+
+    syncRideOnPosBottomWithDefaultParam();
+    if (al::isOnGround(this, 3))
+        al::scaleVelocity(this, 0.7f);
+    else
+        al::scaleVelocity(this, 0.97f);
+
+    if (al::isCollidedGround(this))
+        al::addVelocityToGravityFittedGround(this, 2.0f, 0);
+    else
+        al::addVelocityToGravity(this, 2.0f);
+
+    if (al::isGreaterEqualStep(this, 40)) {
+        if (al::isInAreaObj(al::getPlayerActor(this, 0), "StealthArea") ||
+            rs::isPlayerHackJugemFishing(this) || !al::isNearPlayer(this, 1200.0f)) {
+            al::setNerve(this, &NrvKuriboHack.Wander);
+        } else {
+            al::setNerve(this, &NrvKuriboHack.Turn);
+        }
+    } else if (al::isCollidedGroundFloorCode(this, "Slide")) {
+        al::setNerve(this, &NrvKuriboHack.Slide);
+    }
+}
+
+// void FUN_710014e3f0(KuriboHack* param_1, const sead::OffsetList<KuriboHack>& param_2,
+//                     const char* param_3, const char* param_4) {}
+
+void KuriboHack::setShiftTypeOnGround(s32 shiftTypeOnGround) {
+    mShiftTypeOnGround = shiftTypeOnGround;
+    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+        kuriboHack->mShiftTypeOnGround = shiftTypeOnGround;
+}
+
+void KuriboHack::offDynamics() {
+    if (!mJointSpringControllerHolder || !_148)
+        return;
+
+    mJointSpringControllerHolder->offControlAll();
+    _148 = false;
+}
+
+void KuriboHack::syncRideOnPosBottomWithDefaultParam() {
+    if (_1a4 != 0)
+        _1a4--;
+    syncRideOnPosBottom((f32)_1a4 / -10.0f + 1.0f, getRideOnRowSize());
+}
+
+void KuriboHack::exeWander() {
+    if (al::isFirstStep(this)) {
+        if (_2e8.size() > 0)
+            mEnemyStateWander->changeWalkAnim("WalkTowerBottom");
+        else
+            mEnemyStateWander->changeWalkAnim("Walk");
+    }
+
+    bool isFirstWanderStep = al::isFirstStep(mEnemyStateWander);
+    syncRideOnPosBottomWithDefaultParam();
+    al::updateNerveState(this);
+    if (al::isFirstStep(this)) {
+        onDynamics();
+        al::validateClipping(this);
+        al::startMtsAnim(this, "EyeReset");
+        setShiftTypeOnGround(1);
+    }
+
+    if (isFirstWanderStep && _2e8.size() > 0) {
+        if (mEnemyStateWander->isWait())
+            for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+                al::startAction(kuriboHack, "WaitTower");
+        else if (mEnemyStateWander->isWalk())
+            for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+                al::startAction(kuriboHack, "WalkTower");
+        else
+            for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
+                al::startAction(kuriboHack, "FallTower");
+    }
+
+    if (mEnemyStateWander->isWait()) {
+        tryShiftDrown();
+    } else if (al::isCollidedGroundFloorCode(this, "Slide")) {
+        al::setNerve(this, &NrvKuriboHack.Slide);
+    } else if (!al::isInAreaObj(al::getPlayerActor(this, 0), "StealthArea") &&
+               !rs::isPlayerHackJugemFishing(this) && al::isNearPlayer(this, 1200.0f) &&
+               al::isGreaterEqualStep(this, 60)) {
+        al::setNerve(this, &NrvKuriboHack.Turn);
+    }
+}
+
+bool KuriboHack::tryShiftDrown() {
+    if (!al::isOnGround(this, 0) || !al::isFallNextMove(this, sead::Vector3f::zero, 50.0f, 200.0f))
+        return false;
+
+    al::setVelocityZeroH(this);
+    al::setNerve(this, &NrvKuriboHack.Drown);
+
+    return true;
 }
