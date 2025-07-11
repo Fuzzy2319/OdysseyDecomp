@@ -47,6 +47,7 @@
 #include "Scene/SceneEventNotifier.h"
 #include "Util/ActorStateSandGeyser.h"
 #include "Util/CollisionUtil.h"
+#include "Util/DemoUtil.h"
 #include "Util/Hack.h"
 #include "Util/PlayerUtil.h"
 #include "Util/SensorMsgFunction.h"
@@ -80,8 +81,10 @@ NERVES_MAKE_STRUCT(KuriboHack, Wander, WaitHack, Reset, BlowDown, SandGeyser, Ha
                    Sink, Fall, Slide, DamageCap, Drown)
 }  // namespace
 
-static al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f, 35.0f, 2.0f,
-                                                               0.97f,      120,   true};
+const sead::Vector3f gDitherAnimClippingJudgeLocalOffset = {0.0f, 70.0f, 0.0f};
+
+const al::EnemyStateBlowDownParam gEnemyStateBlowDownParam = {"BlowDown", 18.0f, 35.0f, 2.0f,
+                                                              0.97f,      120,   true};
 
 KuriboHack::KuriboHack(const char* name) : LiveActor(name) {}
 
@@ -562,11 +565,12 @@ void KuriboHack::noRevive() {
     mEnemyStateReset->setRevive(false);
 }
 
-void FUN_710014e3f0(KuriboHack*, const sead::OffsetList<KuriboHack>&, const char*, const char*);
+void startActionAll(KuriboHack* host, const sead::OffsetList<KuriboHack>& towerList,
+                    const char* hostActionName, const char* towerActionName = nullptr);
 
 void KuriboHack::exeWait() {
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "Wait", nullptr);
+        startActionAll(this, _2e8, "Wait");
         setShiftTypeOnGround(1);
 
         offDynamics();
@@ -595,8 +599,22 @@ void KuriboHack::exeWait() {
     }
 }
 
-// void FUN_710014e3f0(KuriboHack* param_1, const sead::OffsetList<KuriboHack>& param_2,
-//                     const char* param_3, const char* param_4) {}
+void startActionAll(KuriboHack* host, const sead::OffsetList<KuriboHack>& towerList,
+                    const char* hostActionName, const char* towerActionName) {
+    al::startAction(host, hostActionName);
+    al::StringTmp<128> towerActionStrTmp;
+    if (towerActionName) {
+        towerActionStrTmp.format("%s", towerActionName);
+    } else {
+        towerActionStrTmp.format("%sTower", hostActionName);
+        if (!al::isExistAction(host, towerActionStrTmp.cstr()))
+            towerActionStrTmp.format("%s", hostActionName);
+    }
+
+    const char* towerActionStr = towerActionStrTmp.cstr();
+    for (auto kuriboHack = towerList.begin(); kuriboHack != towerList.end(); ++kuriboHack)
+        al::startAction(kuriboHack, towerActionStr);
+}
 
 void KuriboHack::setShiftTypeOnGround(s32 shiftTypeOnGround) {
     mTypeOnGround = shiftTypeOnGround;
@@ -678,7 +696,7 @@ void KuriboHack::exeStop() {
 
     if (al::isFirstStep(this)) {
         al::startMtsAnim(this, "EyeReset");
-        FUN_710014e3f0(this, _2e8, "Miss", nullptr);
+        startActionAll(this, _2e8, "Miss");
         al::invalidateClipping(this);
         offDynamics();
         setShiftTypeOnGround(2);
@@ -706,7 +724,7 @@ void KuriboHack::exeAttack() {
     syncRideOnPosBottomWithDefaultParam();
 
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "Attack", "AttackTower");
+        startActionAll(this, _2e8, "Attack", "AttackTower");
         al::invalidateClipping(this);
         onDynamics();
     }
@@ -773,7 +791,7 @@ void KuriboHack::exeFall() {
     syncRideOnPosBottomWithDefaultParam();
 
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "Fall", nullptr);
+        startActionAll(this, _2e8, "Fall");
         onDynamics();
     }
 
@@ -795,7 +813,7 @@ void KuriboHack::exeLand() {
     syncRideOnPosBottomWithDefaultParam();
 
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "Land", nullptr);
+        startActionAll(this, _2e8, "Land");
         onDynamics();
     }
 
@@ -847,7 +865,7 @@ void KuriboHack::exeSlide() {
     syncRideOnPosBottomWithDefaultParam();
 
     if (al::isFirstStep(this))
-        FUN_710014e3f0(this, _2e8, "Slide", nullptr);
+        startActionAll(this, _2e8, "Slide");
 
     if (al::isOnGround(this, 3))
         al::scaleVelocity(this, 0.7f);
@@ -873,7 +891,7 @@ void KuriboHack::exeSlide() {
 
 void KuriboHack::exeSandGeyser() {
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "SandGeyser", nullptr);
+        startActionAll(this, _2e8, "SandGeyser");
         al::invalidateClipping(this);
         onDynamics();
         clearSink();
@@ -922,7 +940,7 @@ void KuriboHack::exeTowerHackEnd() {
     syncRideOnPosBottomWithDefaultParam();
 
     if (al::isFirstStep(this)) {
-        FUN_710014e3f0(this, _2e8, "HackEnd", nullptr);
+        startActionAll(this, _2e8, "HackEnd");
         al::setVelocityZero(this);
         setShiftTypeOnGround(2);
         offDynamics();
@@ -1110,4 +1128,44 @@ bool checkMessageCommon(al::SensorMsg* message) {
            rs::isMsgWaterRoadIn(message) || rs::isMsgFireDamageAll(message) ||
            rs::isMsgHackAttackFire(message) || rs::isMsgGunetterBodyTouch(message) ||
            rs::isMsgGunetterAttack(message);
+}
+
+// void FUN_71001533a8(KuriboHack*, EnemyStateBlowDown*, SensorMsg*, HitSensor*, HitSensor*,
+//                     KuriboHack**, OffsetList*) {}
+
+void KuriboHack::addCapToHackDemo() {
+    if (!mEnemyCap || al::isDead(mEnemyCap))
+        return;
+
+    rs::addDemoActor(mEnemyCap, false);
+}
+
+// bool KuriboHack::tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other,
+//                                    al::HitSensor* self) {}
+
+void handleEatBind(KuriboHack* kuribo, al::SensorMsg* message, al::HitSensor* other,
+                   al::HitSensor* self, KuriboHack** host, sead::OffsetList<KuriboHack>* tower) {
+    if (*host) {
+        rs::sendMsgRideOnRelease(al::getHitSensor(*host, "Body"), self);
+        *host = nullptr;
+    } else if (tower->size() > 0) {
+        KuriboHack* k = tower->front();
+        k->transferGroup(tower);
+        al::setNerve(k, &NrvKuriboHack.Wander);
+    }
+
+    al::setNerve(kuribo, &NrvKuriboHack.EatBind);
+    rs::requestHitReactionToAttacker(message, self, other);
+}
+
+// bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other,
+//                                al::HitSensor* self) {}
+
+void KuriboHack::notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
+                                             al::HitSensor* self) {
+    for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
+        kuriboHack->eraseFromHost();
+        rs::sendMsgRideOnEnd(al::getHitSensor(kuriboHack, "Body"), other);
+        kuriboHack->receiveMsg(message, other, self);
+    }
 }
