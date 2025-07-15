@@ -514,13 +514,12 @@ void handleNeedle(KuriboHack* kuribo, al::EnemyStateBlowDown* state, KuriboHack*
 // void KuriboHack::updateCollider() {}
 // void KuriboHack::solveCollisionInHacking(const sead::Vector3f&) {}
 
-// NON_MATCHING regswap https://decomp.me/scratch/GObFz
 void KuriboHack::pushFrom(KuriboHack* kuribo, const sead::Vector3f& up) {
     sead::Vector3f gravity = -up;
     if (!al::tryNormalizeOrZero(&gravity))
         return;
 
-    for (auto kuriboHack = _2e8.begin(kuribo); kuriboHack != _2e8.end(); --kuriboHack)
+    for (auto kuriboHack = --_2e8.begin(kuribo); kuriboHack != _2e8.end(); --kuriboHack)
         kuriboHack->mPlayerPushReceiver->receiveForceDirect(up);
 
     mPlayerPushReceiver->receiveForceDirect(up);
@@ -890,16 +889,20 @@ bool KuriboHack::tryShiftChaseOrWander() {
 
 // void KuriboHack::exeSink() {}
 
-// NON_MATCHING
+inline void updateColliderOffsetYAll(sead::OffsetList<KuriboHack>* tower, KuriboHack* kuribo,
+                                     f32 offsetY) {
+    al::setColliderOffsetY(kuribo, offsetY);
+    for (auto kuriboHack = tower->begin(); kuriboHack != tower->end(); ++kuriboHack)
+        al::setColliderOffsetY(kuriboHack, offsetY);
+}
+
 bool KuriboHack::updateSink() {
     f32 radius = al::getColliderRadius(this);
     f32 offsetY = al::getColliderOffsetY(this) + 1.0f;
     if (offsetY > radius * 3.0f)
         return true;
 
-    al::setColliderOffsetY(this, offsetY);
-    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
-        al::setColliderOffsetY(kuriboHack, offsetY);
+    updateColliderOffsetYAll(&_2e8, this, offsetY);
 
     return false;
 }
@@ -943,12 +946,8 @@ void KuriboHack::exeSandGeyser() {
     al::updateNerveStateAndNextNerve(this, &NrvKuriboHack.Wander);
 }
 
-// NON_MATCHING
 void KuriboHack::clearSink() {
-    f32 radius = al::getColliderRadius(this);
-    al::setColliderOffsetY(this, radius);
-    for (auto kuriboHack = _2e8.begin(); kuriboHack != _2e8.end(); ++kuriboHack)
-        al::setColliderOffsetY(kuriboHack, radius);
+    updateColliderOffsetYAll(&_2e8, this, al::getColliderRadius(this));
 }
 
 void KuriboHack::exeWaitHack() {
