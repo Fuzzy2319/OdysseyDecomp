@@ -49,6 +49,7 @@
 #include "Util/CollisionUtil.h"
 #include "Util/DemoUtil.h"
 #include "Util/Hack.h"
+#include "Util/ItemUtil.h"
 #include "Util/PlayerUtil.h"
 #include "Util/SensorMsgFunction.h"
 
@@ -461,13 +462,55 @@ bool KuriboHack::checkSandSinkPrecisely() const {
     return true;
 }
 
-// void FUN_710014d2ac(KuriboHack *param_1,KuriboHack **param_2,OffsetList *param_3,bool param_4) {}
+void handleKill(KuriboHack* kuribo, KuriboHack** host, sead::OffsetList<KuriboHack>* tower,
+                bool param_4) {
+    if (*host) {
+        rs::sendMsgRideOnRelease(al::getHitSensor(*host, "Body"), al::getHitSensor(kuribo, "Body"));
+        *host = nullptr;
+    } else if (tower->size() > 0) {
+        KuriboHack* k = tower->front();
+        k->transferGroup(tower);
+        al::setNerve(k, &NrvKuriboHack.Wander);
+    }
 
-void FUN_710014d390(sead::OffsetList<KuriboHack>*, al::HitSensor*);
+    if (!param_4)
+        al::startHitReaction(kuribo, "死亡");
 
-// void FUN_710014d390(OffsetList *param_1,HitSensor *param_2) {}
-// void FUN_710014d440(KuriboHack *param_1,EnemyStateBlowDown *param_2,KuriboHack **param_3,
-//                     OffsetList *param_4) {}
+    al::setNerve(kuribo, &NrvKuriboHack.Reset);
+}
+
+void endRideAll(sead::OffsetList<KuriboHack>* tower, al::HitSensor* other) {
+    for (auto kuriboHack = tower->robustBegin(); kuriboHack != tower->robustEnd(); ++kuriboHack) {
+        kuriboHack->eraseFromHost();
+        rs::sendMsgRideOnEnd(al::getHitSensor(kuriboHack, "Body"), other);
+    }
+}
+
+void handleNeedle(KuriboHack* kuribo, al::EnemyStateBlowDown* state, KuriboHack** host,
+                  sead::OffsetList<KuriboHack>* tower) {
+    if (*host) {
+        rs::sendMsgRideOnRelease(al::getHitSensor(*host, "Body"), al::getHitSensor(kuribo, "Body"));
+        *host = nullptr;
+    } else if (tower->size() > 0) {
+        KuriboHack* k = tower->front();
+        k->transferGroup(tower);
+        al::setNerve(k, &NrvKuriboHack.Wander);
+    }
+
+    sead::Vector3f dir;
+    dir.set(al::getCollidedGroundNormal(kuribo));
+    dir.y = 0;
+    if (!al::tryNormalizeOrZero(&dir)) {
+        al::calcFrontDir(&dir, kuribo);
+        dir.x = -dir.x;
+        dir.y = -dir.y;
+        dir.z = -dir.z;
+    }
+    state->start(dir);
+
+    al::setNerve(kuribo, &NrvKuriboHack.BlowDown);
+}
+
 // void KuriboHack::updateCollider() {}
 // void KuriboHack::solveCollisionInHacking(const sead::Vector3f&) {}
 
@@ -972,11 +1015,11 @@ void KuriboHack::exeHack() {
 
     if (al::updateNerveState(this)) {
         if (!mKuriboStateHack->get_c0()) {
-            FUN_710014d390(&_2e8, al::getHitSensor(this, "Body"));
+            endRideAll(&_2e8, al::getHitSensor(this, "Body"));
             shiftWaitHack();
         } else {
             al::startHitReaction(this, "死亡");
-            FUN_710014d390(&_2e8, al::getHitSensor(this, "Body"));
+            endRideAll(&_2e8, al::getHitSensor(this, "Body"));
             al::setNerve(this, &NrvKuriboHack.Reset);
         }
     }
@@ -1049,10 +1092,11 @@ void KuriboHack::transferGroup(sead::OffsetList<KuriboHack>* dst) {
 }
 
 void KuriboHack::eraseFromHost() {
-    if (mHost) {
-        mHost->_2e8.erase(this);
-        al::showModelIfHide(this);
-    }
+    if (!mHost)
+        return;
+
+    mHost->_2e8.erase(this);
+    al::showModelIfHide(this);
 }
 
 void KuriboHack::notifyJumpSink(f32 param_1) {
@@ -1069,9 +1113,63 @@ bool KuriboHack::isSinking() const {
         return false;
 }
 
-// void KuriboHack::syncRideOnPosBottom(f32, f32) {}
-// void FUN_7100152ba8(f32, f32, KuriboHack*, KuriboHack*) {}
-// void KuriboHack::resetRideOnPosBottom(f32) {}
+void syncRideOnPos(f32, f32, KuriboHack*, KuriboHack*);
+
+// NON_MATCHING
+void KuriboHack::syncRideOnPosBottom(f32 param_1, f32 param_2) {
+    if (_2e8.isEmpty())
+        return;
+
+    KuriboHack* k = _2e8.back();
+    if (al::isCollidedCeiling(k))
+        param_2 = sead::Mathf::clampMax(
+            (al::getTrans(k).y - al::getTrans(this).y) / (f32)_2e8.size(), param_2);
+
+    syncRideOnPos(param_1, param_2, this, _2e8.front());
+    auto kuribo = ++_2e8.begin();
+    for (auto kuriboHack = _2e8.begin(); kuribo != _2e8.end(); ++kuriboHack)
+        syncRideOnPos(param_1, param_2, kuriboHack, kuribo);
+}
+
+void syncRideOnPos(f32 param_1, f32 param_2, KuriboHack* param_3, KuriboHack* param_4) {
+    sead::Vector3f up;
+    al::calcUpDir(&up, param_3);
+    sead::Quatf quat;
+    al::calcQuat(&quat, param_3);
+    param_4->applyRideOnQuat(quat);
+
+    sead::Vector3f velocity;
+    velocity.setSub(al::getTrans(param_3) + up * param_2, al::getTrans(param_4));
+
+    al::setVelocity(param_4, velocity * param_1);
+}
+
+// NON_MATCHING
+void KuriboHack::resetRideOnPosBottom(f32 param_1) {
+    if (_2e8.isEmpty())
+        return;
+
+    KuriboHack* k = _2e8.back();
+    if (al::isCollidedCeiling(k))
+        param_1 = sead::Mathf::clampMax(
+            (al::getTrans(k).y - al::getTrans(this).y) / (f32)_2e8.size(), param_1);
+
+    KuriboHack* kuribo = _2e8.front();
+    sead::Vector3f up;
+    al::calcUpDir(&up, this);
+    sead::Quatf quat;
+    al::calcQuat(&quat, this);
+    al::setQuat(kuribo, quat);
+    al::resetPosition(kuribo, al::getTrans(this) + param_1 * up);
+
+    auto kur = ++_2e8.begin();
+    for (auto kuriboHack = _2e8.begin(); kuribo != _2e8.end(); ++kuriboHack) {
+        al::calcUpDir(&up, kuriboHack);
+        al::calcQuat(&quat, kuriboHack);
+        al::setQuat(kur, quat);
+        al::resetPosition(kur, al::getTrans(kuriboHack) + param_1 * up);
+    }
+}
 
 void KuriboHack::validateSpecialPush(u32 param_1) {
     if (_1b0 == 0)
@@ -1119,7 +1217,26 @@ bool KuriboHack::isCapWorn() const {
 
 // bool KuriboHack::isEnableHack() const {}
 // void KuriboHack::trySetHipDropActor(const al::SensorMsg* message, al::HitSensor* other) {}
-// void FUN_7100153240(KuriboHack*, SensorMsg*, HitSensor*, HitSensor*, KuriboHack**, OffsetList*){}
+
+void handlePressDown(KuriboHack* kuribo, al::SensorMsg* message, al::HitSensor* other,
+                     al::HitSensor* self, KuriboHack** host, sead::OffsetList<KuriboHack>* tower) {
+    if (!*host) {
+        al::startAction(kuribo, "PressDown");
+    } else {
+        rs::sendMsgRideOnRelease(al::getHitSensor(*host, "Body"), self);
+        *host = nullptr;
+
+        if (!rs::isMsgPlayerAndCapObjHipDropAll(message))
+            al::startAction(kuribo, "PressDownTower");
+        else
+            al::startAction(kuribo, "PressDown");
+    }
+
+    endRideAll(tower, other);
+    rs::setAppearItemFactorAndOffsetByMsg(kuribo, message, other);
+    rs::requestHitReactionToAttacker(message, self, other);
+    al::setNerve(kuribo, &NrvKuriboHack.PressDown);
+}
 
 bool checkMessageCommon(al::SensorMsg* message) {
     return rs::isMsgBlowDown(message) || rs::isMsgGrowerAttack(message) ||
@@ -1130,8 +1247,25 @@ bool checkMessageCommon(al::SensorMsg* message) {
            rs::isMsgGunetterAttack(message);
 }
 
-// void FUN_71001533a8(KuriboHack*, EnemyStateBlowDown*, SensorMsg*, HitSensor*, HitSensor*,
-//                     KuriboHack**, OffsetList*) {}
+void handleBlowDown(KuriboHack* kuribo, al::EnemyStateBlowDown* state, al::SensorMsg* message,
+                    al::HitSensor* other, al::HitSensor* self, KuriboHack** host,
+                    sead::OffsetList<KuriboHack>* tower) {
+    if (*host) {
+        rs::sendMsgRideOnRelease(al::getHitSensor(*host, "Body"), self);
+        *host = nullptr;
+    } else if (tower->size() > 0) {
+        KuriboHack* k = tower->front();
+        k->transferGroup(tower);
+        al::setNerve(k, &NrvKuriboHack.Wander);
+    }
+
+    rs::setAppearItemFactorAndOffsetByMsg(kuribo, message, other);
+    sead::Vector3f dir;
+    rs::calcBlowDownDir(&dir, message, other, self);
+    state->start(dir);
+    rs::requestHitReactionToAttacker(message, self, other);
+    al::setNerve(kuribo, &NrvKuriboHack.BlowDown);
+}
 
 void KuriboHack::addCapToHackDemo() {
     if (!mEnemyCap || al::isDead(mEnemyCap))
