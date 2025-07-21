@@ -1226,7 +1226,45 @@ void KuriboHack::endRideOn() {
     al::restartDitherAnimAutoCtrl(this);
 }
 
-// void KuriboHack::exeDrown() {}
+void KuriboHack::exeDrown() {
+    syncRideOnPosBottomWithDefaultParam();
+
+    if (al::isFirstStep(this)) {
+        startActionAll(this, _2e8, "Wait");
+        onDynamics();
+    }
+
+    bool isFallNextMove = al::isFallNextMove(this, sead::Vector3f::zero, 50.0f, 200.0f);
+    bool isOnGround = al::isOnGround(this, 4);
+    if (isFallNextMove && isOnGround) {
+        if (al::isOnGround(this, 0)) {
+            sead::Vector3f dir = al::getTrans(this) - al::getCollidedGroundPos(this);
+            f32 dirX = dir.x;
+            f32 dirZ = dir.z;
+            if (al::tryNormalizeOrZero(&dir)) {
+                f32 flatSquaredLength = dirX * dirX + dirZ * dirZ;
+                if (al::isLessEqualStep(this, 30) && flatSquaredLength < 400.0f) {
+                    dir.x = -dir.x;
+                    dir.y = -dir.y;
+                    dir.z = -dir.z;
+                }
+                al::addVelocityToDirection(this, dir, 4.0f);
+            }
+        }
+
+        if (al::isOnGround(this, 3))
+            al::scaleVelocity(this, 0.7f);
+        else
+            al::scaleVelocity(this, 0.97f);
+
+        if (al::isCollidedGround(this))
+            al::addVelocityToGravityFittedGround(this, 2.0f, 0);
+        else
+            al::addVelocityToGravity(this, 2.0f);
+    } else if (!tryShiftChaseOrWander()) {
+        al::setNerve(this, &NrvKuriboHack.Fall);
+    }
+}
 
 void KuriboHack::exeEatBind() {}
 
