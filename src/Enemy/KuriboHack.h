@@ -63,7 +63,8 @@ public:
     bool isInvalidHackDamage() const;
     void noRevive();
     void notifyJumpSink(f32);
-    void notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    void notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
+                                     al::HitSensor* self);
     void offDynamics();
     void offSnapShotMode();
     void onDynamics();
@@ -81,14 +82,18 @@ public:
     void syncRideOnPosBottomWithDefaultParam();
     void transferGroup(sead::OffsetList<KuriboHack>* dst);
     void tryCreateEnemyCap(const al::ActorInitInfo& info);
-    bool tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other,
+                              al::HitSensor* self);
     bool tryReceiveMsgHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other,
+                             al::HitSensor* self);
     bool tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
+    bool tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
+                             al::HitSensor* self);
+    bool tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other,
+                               al::HitSensor* self);
     bool tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
-    bool trySetHipDropActor(const al::SensorMsg* message, al::HitSensor* other);
+    void trySetHipDropActor(const al::SensorMsg* message, al::HitSensor* other);
     __attribute__((noinline)) bool tryShiftChaseOrWander();
     bool tryShiftDrown();
     void updateCapLockOnMtx();
@@ -121,7 +126,7 @@ public:
     void exeDamageCap();
     void exeDrown();
 
-private:
+    // private:
     CapTargetInfo* mCapTargetInfo = nullptr;
     EnemyStateSwoon* mEnemyStateSwoon = nullptr;
     EnemyStateReset* mEnemyStateReset = nullptr;
