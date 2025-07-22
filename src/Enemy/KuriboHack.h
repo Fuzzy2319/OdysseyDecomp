@@ -50,6 +50,7 @@ public:
     s32 indexInHostList() const;
     bool isCapWorn() const;
     bool isEnableHack() const;
+    bool isInvalidHackDamage() const;
     bool isSinking() const;
 
     void addCapToHackDemo();
@@ -60,7 +61,6 @@ public:
     void eraseFromHost();
     void forceStartClipped();
     void invalidateHackDamage();
-    bool isInvalidHackDamage() const;
     void noRevive();
     void notifyJumpSink(f32);
     void notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
@@ -126,7 +126,7 @@ public:
     void exeDamageCap();
     void exeDrown();
 
-    // private:
+private:
     CapTargetInfo* mCapTargetInfo = nullptr;
     EnemyStateSwoon* mEnemyStateSwoon = nullptr;
     EnemyStateReset* mEnemyStateReset = nullptr;

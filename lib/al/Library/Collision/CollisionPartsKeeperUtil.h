@@ -27,6 +27,7 @@ bool getHitPosOnArrow(const al::IUseCollision*, sead::Vector3f*, const sead::Vec
 s32 checkStrikeArrow(const al::IUseCollision*, const sead::Vector3f& origin,
                      const sead::Vector3f& delta, const al::CollisionPartsFilterBase*,
                      const al::TriangleFilterBase*);
+al::ArrowHitInfo* getStrikeArrowInfo(const al::IUseCollision* collisionUser, u32 index);
 
 const sead::Vector3f& getCollisionHitPos(const al::HitInfo*);
 const sead::Vector3f& getCollisionHitNormal(const al::HitInfo*);

@@ -3,6 +3,7 @@
 #include "Library/Base/StringUtil.h"
 #include "Library/Collision/Collider.h"
 #include "Library/Collision/CollisionPartsKeeperUtil.h"
+#include "Library/Collision/CollisionPartsTriangle.h"
 #include "Library/Collision/KCollisionServer.h"
 #include "Library/Effect/EffectSystemInfo.h"
 #include "Library/Item/ItemUtil.h"
@@ -533,7 +534,49 @@ void handleNeedle(KuriboHack* kuribo, al::EnemyStateBlowDown* state, KuriboHack*
 }
 
 // void KuriboHack::updateCollider() {}
-// void KuriboHack::solveCollisionInHacking(const sead::Vector3f&) {}
+
+// NON_MATCHING
+void KuriboHack::solveCollisionInHacking(const sead::Vector3f& param_1) {
+    if (!al::isNerve(this, &NrvKuriboHack.Hack) &&
+        (!al::isNerve(this, &NrvKuriboHack.RideOn) || !al::isNerve(mHost, &NrvKuriboHack.Hack)))
+        return;
+
+    f32 colliderOffsetY = al::getColliderOffsetY(this);
+    f32 colliderRadius = al::getColliderRadius(this);
+    sead::Vector3f local_80;
+    local_80.setScaleAdd(colliderOffsetY, sead::Vector3f::ey, param_1);
+    sead::Vector3f local_90;
+    local_90.setScaleAdd(colliderOffsetY, sead::Vector3f::ey, al::getTrans(this));
+    local_90 -= local_80;
+
+    if (!al::tryNormalizeOrZero(&local_90))
+        return;
+
+    colliderRadius += local_90.length();
+    s32 strikeArrowCount = alCollisionUtil::checkStrikeArrow(
+        this, local_80, local_90 * colliderRadius, nullptr, nullptr);
+    f32 fVar7 = colliderRadius;
+    f32 fVar9;
+    for (s32 i = 0; i != strikeArrowCount; i++) {
+        fVar9 = fVar7;
+        al::HitInfo* hitInfo = **alCollisionUtil::getStrikeArrowInfo(this, i);
+        if (!hitInfo->triangle.isHostMoved()) {
+            if (al::isWallPolygon(hitInfo->triangle.getNormal(0), al::getGravity(this))) {
+                fVar9 = hitInfo->_70;
+                if (fVar7 <= fVar9)
+                    fVar9 = fVar7;
+            }
+        }
+        fVar7 = fVar9;
+    }
+
+    if (fVar7 >= colliderRadius)
+        return;
+
+    sead::Vector3f sub = {(colliderRadius - fVar7) * local_90.x, 0.0f,
+                          (colliderRadius - fVar7) * local_90.z};
+    *al::getTransPtr(this) -= sub;
+}
 
 void KuriboHack::pushFrom(KuriboHack* kuribo, const sead::Vector3f& up) {
     sead::Vector3f gravity = -up;
@@ -821,7 +864,113 @@ void KuriboHack::exeFind() {
         al::addVelocityToGravity(this, 2.0f);
 }
 
-// void KuriboHack::exeChase() {}
+// NON_MATCHING: vector code gen https://decomp.me/scratch/p7QEp
+void KuriboHack::exeChase() {
+    syncRideOnPosBottomWithDefaultParam();
+
+    if (al::isFirstStep(this)) {
+        if (_2e8.size() >= 1)
+            startActionAll(this, _2e8, "RunTowerBottom", "RunTower");
+        else
+            startActionAll(this, _2e8, "Run");
+
+        _16c = 0;
+        al::invalidateClipping(this);
+        onDynamics();
+    }
+
+    f32 angleToPlayer = al::calcAngleToTargetH(this, rs::getPlayerPos(this));
+    angleToPlayer = al::lerpValue(test(angleToPlayer), -90.0f, 90.0f, 0.0f,
+                                  al::getMtsAnimFrameMax(this, "EyeMove"));
+    al::startMtsAnimAndSetFrameAndStop(this, "EyeMove", angleToPlayer);
+
+    if (al::isCollidedGroundFloorCode(this, "Slide")) {
+        al::setNerve(this, &NrvKuriboHack.Slide);
+
+        return;
+    }
+
+    if (al::isGreaterEqualStep(this, 400)) {
+        al::setNerve(this, &NrvKuriboHack.Stop);
+
+        return;
+    }
+
+    if (!al::isOnGround(this, 0)) {
+        if (al::isOnGround(this, 3))
+            al::scaleVelocity(this, 0.7f);
+        else
+            al::scaleVelocity(this, 0.97f);
+
+        if (al::isCollidedGround(this))
+            al::addVelocityToGravityFittedGround(this, 2.0f, 0);
+        else
+            al::addVelocityToGravity(this, 2.0f);
+
+        return;
+    }
+
+    al::LiveActor* player = al::tryFindNearestPlayerActor(this);
+    sead::Vector3f frontDir = sead::Vector3f::zero;
+    al::calcQuatFront(&frontDir, this);
+    if (player) {
+        if (al::isInAreaObj(al::getPlayerActor(this, 0), "StealthArea") ||
+            rs::isPlayerHackJugemFishing(this)) {
+            al::setNerve(this, &NrvKuriboHack.Stop);
+
+            return;
+        }
+
+        if (al::isInSightFan(this, al::getTrans(player), frontDir, 2000.0f, 80.0f, 40.0f)) {
+            al::turnToTarget(this, al::getTrans(player), 2.0f);
+            _16c = 0;
+        } else {
+            _16c++;
+        }
+    } else {
+        _16c++;
+    }
+
+    if (_16c >= 21) {
+        al::setNerve(this, &NrvKuriboHack.Stop);
+
+        return;
+    }
+
+    if (al::isOnGround(this, 0)) {
+        sead::Quatf quat;
+        al::makeQuatRotationRate(&quat, sead::Vector3f::ey, al::getCollidedGroundNormal(this),
+                                 1.0f);
+        frontDir.setRotated(quat, frontDir);
+    }
+
+    if (_16c == 0)
+        al::addVelocityToDirection(this, frontDir, 4.0f);
+    else
+        al::addVelocityToDirection(this, frontDir, 3.3f);
+
+    if (al::isFallNextMove(this, sead::Vector3f::zero, 50.0f, 200.0f)) {
+        sead::Vector3f local_50 = al::getCollidedGroundPos(this) - al::getTrans(this);
+        local_50.y = 0.0f;
+
+        mPlayerPushReceiver->receiveForceDirect(local_50 * 0.5f);
+        if (al::tryNormalizeOrZero(&local_50)) {
+            f32 fVar11 = local_50.dot(al::getVelocity(this));
+            if (fVar11 < 0.0f)
+                *al::getVelocityPtr(this) -= fVar11 * local_50;  // mismatch here
+        }
+    }
+
+    if (al::isOnGround(this, 3))
+        al::scaleVelocity(this, 0.7f);
+    else
+        al::scaleVelocity(this, 0.97f);
+
+    if (al::isCollidedGround(this))
+        al::addVelocityToGravityFittedGround(this, 2.0f, 0);
+    else
+        al::addVelocityToGravity(this, 2.0f);
+}
 
 void KuriboHack::exeStop() {
     syncRideOnPosBottomWithDefaultParam();
