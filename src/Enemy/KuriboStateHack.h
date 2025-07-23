@@ -21,6 +21,7 @@ public:
     KuriboStateHack(KuriboHack* host);
 
     void calcAnim();
+    void startHack(al::HitSensor*, al::HitSensor*, al::LiveActor*, bool);
 
     bool isSandGeyser() const;
 

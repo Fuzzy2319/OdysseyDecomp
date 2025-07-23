@@ -1581,9 +1581,9 @@ bool KuriboHack::isCapWorn() const {
 }
 
 bool KuriboHack::isEnableHack() const {
-    const KuriboHack* kuriboHack;
-    for (kuriboHack = this; kuriboHack->mHost; kuriboHack = kuriboHack->mHost) {
-    }
+    const KuriboHack* kuriboHack = this;
+    while (kuriboHack->mHost)
+        kuriboHack = kuriboHack->mHost;
 
     if (al::isNerve(kuriboHack, &NrvKuriboHack.WaitHack) && !al::isOnGround(kuriboHack, 0) &&
         kuriboHack->_1bc < al::getTrans(kuriboHack).y)
@@ -1692,8 +1692,64 @@ void handleEatBind(KuriboHack* kuribo, al::SensorMsg* message, al::HitSensor* ot
     rs::requestHitReactionToAttacker(message, self, other);
 }
 
-// bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other,
-//                                al::HitSensor* self) {}
+bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* other,
+                               al::HitSensor* self) {
+    if (!isEnableHack())
+        return false;
+
+    if (mEnemyStateSwoon->tryReceiveMsgStartLockOn(message) ||
+        mEnemyStateSwoon->tryReceiveMsgEnableLockOn(message))
+        return true;
+
+    if (mEnemyStateSwoon->tryReceiveMsgStartHack(message)) {
+        bool isHostSinking = mHost->isSinking();
+        f32 colliderOffsetY = al::getColliderOffsetY(mHost);
+        KuriboHack* host = mHost;
+        s32 index = indexInHostList();
+        eraseFromHost();
+        mHost = nullptr;
+        host->mHost = this;
+        host->setNerveRideOnCommon();
+        s32 uVar11 = 0;
+        if (index == 0) {
+            _2e8.pushBack(host);
+            uVar11++;
+        }
+
+        for (auto kuriboHack = host->_2e8.robustBegin(); kuriboHack != host->_2e8.robustEnd();
+             ++kuriboHack) {
+            kuriboHack->eraseFromHost();
+            kuriboHack->mHost = this;
+            kuriboHack->setNerveRideOnCommon();
+            _2e8.pushBack(kuriboHack);
+            uVar11++;
+            if (uVar11 == index) {
+                _2e8.pushBack(kuriboHack);
+                uVar11++;
+            }
+        }
+        sead::Vector3f trans = al::getTrans(this);
+        al::copyPose(this, host);
+        al::setNerve(this, &NrvKuriboHack.Hack);
+        al::resetPosition(this);
+        al::resetPosition(host, trans);
+        syncRideOnPosBottomWithDefaultParam();
+        updateColliderOffsetYAll(&_2e8, this, colliderOffsetY);
+        mKuriboStateHack->startHack(al::getHitSensor(this, "Body"), other, this, isHostSinking);
+        addCapToHackDemo();
+        startActionAll(this, _2e8, "Wait");
+
+        return true;
+    }
+
+    if (mEnemyStateSwoon->tryReceiveMsgStartHack(message)) {
+        mHost->_1b8 = 10;
+
+        return true;
+    }
+
+    return false;
+}
 
 void KuriboHack::notifyKillByShineGetToGroup(const al::SensorMsg* message, al::HitSensor* other,
                                              al::HitSensor* self) {
