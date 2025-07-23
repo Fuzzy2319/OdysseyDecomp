@@ -543,11 +543,9 @@ void KuriboHack::solveCollisionInHacking(const sead::Vector3f& param_1) {
 
     f32 colliderOffsetY = al::getColliderOffsetY(this);
     f32 colliderRadius = al::getColliderRadius(this);
-    sead::Vector3f local_80;
-    local_80.setScaleAdd(colliderOffsetY, sead::Vector3f::ey, param_1);
-    sead::Vector3f local_90;
-    local_90.setScaleAdd(colliderOffsetY, sead::Vector3f::ey, al::getTrans(this));
-    local_90 -= local_80;
+    sead::Vector3f local_80 = sead::Vector3f::ey * colliderOffsetY + param_1;
+    const sead::Vector3f& trans = al::getTrans(this);
+    sead::Vector3f local_90 = sead::Vector3f::ey * colliderOffsetY + trans - local_80;
 
     if (!al::tryNormalizeOrZero(&local_90))
         return;
@@ -559,23 +557,23 @@ void KuriboHack::solveCollisionInHacking(const sead::Vector3f& param_1) {
     f32 fVar9;
     for (s32 i = 0; i != strikeArrowCount; i++) {
         fVar9 = fVar7;
+
         al::HitInfo* hitInfo = **alCollisionUtil::getStrikeArrowInfo(this, i);
-        if (!hitInfo->triangle.isHostMoved()) {
-            if (al::isWallPolygon(hitInfo->triangle.getNormal(0), al::getGravity(this))) {
-                fVar9 = hitInfo->_70;
-                if (fVar7 <= fVar9)
-                    fVar9 = fVar7;
-            }
-        }
+        if (!hitInfo->triangle.isHostMoved() &&
+            al::isWallPolygon(hitInfo->triangle.getNormal(0), al::getGravity(this)))
+            fVar9 = sead::Mathf::clampMax(fVar7, hitInfo->_70);
+
         fVar7 = fVar9;
     }
 
-    if (fVar7 >= colliderRadius)
-        return;
-
-    sead::Vector3f sub = {(colliderRadius - fVar7) * local_90.x, 0.0f,
-                          (colliderRadius - fVar7) * local_90.z};
-    *al::getTransPtr(this) -= sub;
+    if (fVar7 < colliderRadius) {
+        sead::Vector3f sub = {local_90.x, 0.0f, local_90.z};
+        sub.setScale(sub, colliderRadius - fVar7);
+        sead::Vector3f* transPtr = al::getTransPtr(this);
+        transPtr->x -= sub.x;
+        transPtr->y += 0.0f;
+        transPtr->z -= sub.z;
+    }
 }
 
 void KuriboHack::pushFrom(KuriboHack* kuribo, const sead::Vector3f& up) {
