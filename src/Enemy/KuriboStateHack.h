@@ -22,6 +22,7 @@ public:
 
     void calcAnim();
     void startHack(al::HitSensor*, al::HitSensor*, al::LiveActor*, bool);
+    bool receiveMsg(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
 
     bool isSandGeyser() const;
 
