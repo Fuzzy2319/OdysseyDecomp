@@ -1430,8 +1430,87 @@ void KuriboHack::prepareKillByShineGet() {
     al::setNerve(this, &NrvKuriboHack.Reset);
 }
 
-// bool KuriboHack::tryReceiveMsgHack(const al::SensorMsg* message, al::HitSensor* other,
-//                                    al::HitSensor* self) {}
+// NON_MATCHING
+bool KuriboHack::tryReceiveMsgHack(const al::SensorMsg* message, al::HitSensor* other,
+                                   al::HitSensor* self) {
+    if (mHipDropProbeSensor == self || !mKuriboStateHack->receiveMsg(message, other, self))
+        return false;
+
+    if (!mKuriboStateHack->isDead()) {
+        if (rs::isMsgKuriboTowerNum(message) && !mHost)
+            rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+        return true;
+    }
+
+    if (rs::isMsgHackMarioDemo(message)) {
+        for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
+            kuriboHack->eraseFromHost();
+            rs::sendMsgRideOnEnd(al::getHitSensor(kuriboHack, "Body"), other);
+            kuriboHack->prepareKillByShineGet();
+        }
+
+        prepareKillByShineGet();
+
+        if (rs::isMsgKuriboTowerNum(message) && !mHost)
+            rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+        return true;
+    }
+
+    if (rs::isMsgCancelHackByDokan(message)) {
+        for (auto kuriboHack = _2e8.robustBegin(); kuriboHack != _2e8.robustEnd(); ++kuriboHack) {
+            kuriboHack->eraseFromHost();
+            rs::sendMsgRideOnEnd(al::getHitSensor(kuriboHack, "Body"), other);
+            al::startHitReaction(kuriboHack, "死亡");
+            al::setNerve(kuriboHack, &NrvKuriboHack.Reset);
+        }
+
+        al::startHitReaction(this, "死亡");
+        al::setNerve(this, &NrvKuriboHack.Reset);
+
+        if (rs::isMsgKuriboTowerNum(message) && !mHost)
+            rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+        return true;
+    }
+
+    if (mKuriboStateHack->get_c0()) {
+        al::startHitReaction(this, "死亡");
+        endRideAll(&_2e8, other);
+        al::setNerve(this, &NrvKuriboHack.Reset);
+
+        if (rs::isMsgKuriboTowerNum(message) && !mHost)
+            rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+        return true;
+    }
+
+    if (_2e8.size() >= 1) {
+        al::setNerve(this, &NrvKuriboHack.TowerHackEnd);
+
+        if (rs::isMsgKuriboTowerNum(message) && !mHost)
+            rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+        return true;
+    }
+
+    if (al::isOnGround(this, 0))
+        al::setVelocityJump(this, 35.0f);
+    else
+        al::setVelocityJump(this, 30.0f);
+
+    al::addVelocityToFront(this, -5.0f);
+    endRideAll(&_2e8, other);
+    _1bc = al::getTrans(this).y;
+    al::setNerve(this, &NrvKuriboHack.WaitHack);
+
+    if (rs::isMsgKuriboTowerNum(message) && !mHost)
+        rs::setKuriboTowerNum(message, _2e8.size() + 1);
+
+    return true;
+}
+
 // bool KuriboHack::tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSensor* other,
 //                                        al::HitSensor* self) {}
 // bool KuriboHack::tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
@@ -1673,8 +1752,30 @@ void KuriboHack::addCapToHackDemo() {
     rs::addDemoActor(mEnemyCap, false);
 }
 
-// bool KuriboHack::tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other,
-//                                    al::HitSensor* self) {}
+// NON_MATCHING
+bool KuriboHack::tryReceiveMsgPush(const al::SensorMsg* message, al::HitSensor* other,
+                                   al::HitSensor* self) {
+    if (!al::isMsgPushAll(message))
+        return false;
+
+    sead::Vector3f pushForce = al::getSensorPos(self) - al::getSensorPos(other);
+    f32 selfRadius = al::getSensorRadius(self);
+    f32 otherRadius = al::getSensorRadius(other);
+
+    if (selfRadius + otherRadius < pushForce.length())
+        return false;
+
+    f32 pushForceLength = pushForce.length();
+    if (pushForceLength > 0.0f)
+        pushForce *= (selfRadius + otherRadius - pushForceLength) / pushForceLength;
+
+    if (al::isNearZero(pushForce.x * pushForce.x + pushForce.z * pushForce.z))
+        pushForce.z += 1.0f;
+
+    mPlayerPushReceiver->receiveForceDirect(pushForce);
+
+    return true;
+}
 
 void handleEatBind(KuriboHack* kuribo, al::SensorMsg* message, al::HitSensor* other,
                    al::HitSensor* self, KuriboHack** host,
@@ -1705,15 +1806,15 @@ bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* othe
         bool isHostSinking = mHost->isSinking();
         f32 colliderOffsetY = al::getColliderOffsetY(mHost);
         KuriboHack* host = mHost;
-        s32 index = indexInHostList();
+        s32 hostIndex = indexInHostList();
         eraseFromHost();
         mHost = nullptr;
         host->mHost = this;
         host->setNerveRideOnCommon();
-        s32 uVar11 = 0;
-        if (index == 0) {
+        s32 towerIndex = 0;
+        if (towerIndex == hostIndex) {
             _2e8.pushBack(host);
-            uVar11++;
+            towerIndex++;
         }
 
         for (auto kuriboHack = host->_2e8.robustBegin(); kuriboHack != host->_2e8.robustEnd();
@@ -1722,12 +1823,13 @@ bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* othe
             kuriboHack->mHost = this;
             kuriboHack->setNerveRideOnCommon();
             _2e8.pushBack(kuriboHack);
-            uVar11++;
-            if (uVar11 == index) {
-                _2e8.pushBack(kuriboHack);
-                uVar11++;
+            towerIndex++;
+            if (towerIndex == hostIndex) {
+                _2e8.pushBack(host);
+                towerIndex++;
             }
         }
+
         sead::Vector3f trans = al::getTrans(this);
         al::copyPose(this, host);
         al::setNerve(this, &NrvKuriboHack.Hack);
@@ -1742,7 +1844,7 @@ bool KuriboHack::tryRideOnHack(const al::SensorMsg* message, al::HitSensor* othe
         return true;
     }
 
-    if (mEnemyStateSwoon->tryReceiveMsgStartHack(message)) {
+    if (mEnemyStateSwoon->tryReceiveMsgEndSwoon(message)) {
         mHost->_1b8 = 10;
 
         return true;
