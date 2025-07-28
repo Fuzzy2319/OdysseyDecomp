@@ -28,6 +28,8 @@ public:
 
     bool get_c0() const { return _c0; }
 
+    void set_e4(bool value) { _e4 = value; }
+
 private:
     IUsePlayerHack* _20;
     HackerStateNormalMove* mHackerStateNormalMove;
