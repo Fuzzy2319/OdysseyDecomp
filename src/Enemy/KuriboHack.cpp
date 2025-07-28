@@ -1618,8 +1618,30 @@ bool KuriboHack::tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSens
 
 // bool KuriboHack::tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
 //                                      al::HitSensor* self) {}
-// bool KuriboHack::tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other,
-//                                       al::HitSensor* self) {}
+
+bool KuriboHack::tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other,
+                                      al::HitSensor* self) {
+    if (mHipDropProbeSensor == self)
+        return false;
+
+    if (rs::isMsgYoshiTongueEatBindCancel(message)) {
+        al::setNerve(this, &NrvKuriboHack.Wander);
+
+        return true;
+    }
+
+    if (rs::isMsgYoshiTongueEatBindFinish(message)) {
+        rs::setAppearItemFactorAndOffsetByMsg(this, message, other);
+        al::appearItem(this);
+        rs::requestHitReactionToAttacker(message, self, other);
+        al::setNerve(this, &NrvKuriboHack.Reset);
+
+        return true;
+    }
+
+    return false;
+}
+
 // bool KuriboHack::tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other,
 //                                      al::HitSensor* self) {}
 
