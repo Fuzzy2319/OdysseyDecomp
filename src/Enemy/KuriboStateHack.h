@@ -25,6 +25,9 @@ public:
     bool receiveMsg(const al::SensorMsg* message, al::HitSensor* other, al::HitSensor* self);
 
     bool isSandGeyser() const;
+    bool isDemoHackStart() const;
+
+    IUsePlayerHack* get_20() const { return _20; }
 
     bool get_c0() const { return _c0; }
 

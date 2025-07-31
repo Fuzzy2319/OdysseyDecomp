@@ -449,6 +449,7 @@ void KuriboHack::control() {
         mWaterSurfaceEffectMtx.setTranslation(
             {trans.x, mWaterSurfaceFinder->getSurfacePosition().y, trans.z});
     }
+
     if (al::isCollidedGroundFloorCode(this, "SandSink")) {
         al::makeMtxR(&mSandSurfaceEffectMtx, this);
         sead::Vector3f trans = al::getTrans(this);
@@ -456,8 +457,55 @@ void KuriboHack::control() {
             {trans.x, trans.y + (al::getColliderOffsetY(this) - al::getColliderRadius(this)),
              trans.z});
     }
+
     if (al::isNerve(this, &NrvKuriboHack.RideOn) && mHost)
         al::setModelAlphaMask(this, al::getModelAlphaMask(mHost));
+
+    if (al::isNerve(this, &NrvKuriboHack.Hack) ||
+        (al::isNerve(this, &NrvKuriboHack.RideOn) && al::isNerve(mHost, &NrvKuriboHack.Hack))) {
+        if (mHost == nullptr) {
+            if (_2e8.isEmpty()) {
+                if (mKuriboStateHack->isDemoHackStart())
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOffCapOn");
+                else if (rs::isHackCapSeparateFlying(mKuriboStateHack->get_20()))
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOff");
+                else
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOn");
+            }
+        } else if ((mHost->_2e8.isEmpty() ? mHost : mHost->_2e8.back()) == this) {
+            if (!mHost) {
+                if (mKuriboStateHack->isDemoHackStart())
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOffCapOn");
+                else if (rs::isHackCapSeparateFlying(mKuriboStateHack->get_20()))
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOff");
+                else
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOn");
+            } else {
+                if (mHost->mKuriboStateHack->isDemoHackStart())
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOffCapOn");
+                else if (rs::isHackCapSeparateFlying(mHost->mKuriboStateHack->get_20()))
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOff");
+                else
+                    al::tryStartVisAnimIfNotPlaying(this, "HackOnCapOn");
+            }
+        }
+    } else if (!mEnemyCap || !mIsEyebrowOff || mEnemyCap->isBlowDown()) {
+        al::tryStartVisAnimIfNotPlaying(this, "HackOffCapOff");
+    } else {
+        al::tryStartVisAnimIfNotPlaying(this, "HackOffCapOn");
+    }
+
+    if (al::isNerve(this, &NrvKuriboHack.Reset) || al::isNerve(this, &NrvKuriboHack.PressDown) ||
+        al::isNerve(this, &NrvKuriboHack.BlowDown) || al::isNerve(this, &NrvKuriboHack.EatBind)) {
+        if (_1b0 != 0) {
+            al::invalidateHitSensor(this, "SpecialPush");
+            _1b0 = 0;
+        }
+
+        return;
+    }
+
+    // offset 0x710014c8d0
 }
 
 bool KuriboHack::checkSandSinkPrecisely() const {
