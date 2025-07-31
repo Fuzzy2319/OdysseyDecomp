@@ -1616,8 +1616,132 @@ bool KuriboHack::tryReceiveMsgWaitHack(const al::SensorMsg* message, al::HitSens
     return false;
 }
 
-// bool KuriboHack::tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
-//                                      al::HitSensor* self) {}
+// NON_MATCHING
+bool KuriboHack::tryReceiveMsgRideOn(const al::SensorMsg* message, al::HitSensor* other,
+                                     al::HitSensor* self) {
+    if (al::isNerve(this, &NrvKuriboHack.RideOn)) {
+        if (!al::isNerve(mHost, &NrvKuriboHack.Hack) && mHipDropProbeSensor == self &&
+            !rs::isMsgPlayerAndCapObjHipDropAll(message))
+            return false;
+
+        if (mHipDropProbeSensor == self)
+            return false;
+
+        if (rs::isMsgKuriboGirlLove(message))
+            return true;
+
+        if (rs::isMsgKuriboTop(message) &&
+            (mHost->_2e8.isEmpty() ? mHost : mHost->_2e8.back()) == this)
+            return true;
+
+        if (checkMessageCommon(message) || rs::isMsgPlayerDamage(message) ||
+            rs::isMsgPushToPlayer(message))
+            return mHost->receiveMsg(message, other, self);
+
+        if (rs::isMsgRideOnEnd(message)) {
+            mHost = nullptr;
+            sead::Vector3f local_50;
+            al::addRandomVector(&local_50, sead::Vector3f::zero, 20.0f);
+            local_50.y = 0;
+            if (al::isNearZero(local_50))
+                local_50.set({10.0f, 0.0f, 0.0f});
+
+            al::setVelocityBlowAttackAndTurnToTarget(this, al::getTrans(this) + local_50, 7.0f,
+                                                     30.0f);
+            al::setColliderOffsetY(this, al::getColliderRadius(this));
+            _1bc = al::getTrans(this).y;
+            al::setNerve(this, &NrvKuriboHack.WaitHack);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    if (mHipDropProbeSensor == self && !rs::isMsgPlayerAndCapObjHipDropAll(message))
+        return false;
+
+    if (tryRideOnHack(message, other, self))
+        return true;
+
+    if (rs::isMsgPressDown(message)) {
+        if ((mHost->_2e8.isEmpty() ? mHost : mHost->_2e8.back()) != this)
+            return false;
+
+        trySetHipDropActor(message, other);
+        handlePressDown(this, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (al::isMsgPushAll(message))
+        return mHost->receiveMsg(message, other, self);
+
+    if (rs::isMsgSeedAttackBig(message)) {
+        sead::Vector3f local_60 = al::getSensorPos(other) - al::getSensorPos(self);
+        if (al::tryNormalizeOrZero(&local_60) &&
+            local_60.y >= 6.123032e-17f /* sead::Mathf::cos(sead::Mathf::piHalf()) */ &&
+            (mHost->_2e8.isEmpty() ? mHost : mHost->_2e8.back()) == this)
+            return true;
+    }
+
+    if (rs::isMsgYoshiTongueEatBind(message)) {
+        mHost->_1a4 = 10;
+        handleEatBind(this, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (checkMessageCommon(message)) {
+        mHost->_1a4 = 10;
+        handleBlowDown(this, mEnemyStateBlowDown, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (rs::isMsgRideOnStart(message)) {
+        if (_1a4 != 0)
+            return false;
+
+        if (!al::isSensorEnemyBody(self))
+            return false;
+
+        if ((mHost->_2e8.isEmpty() ? mHost : mHost->_2e8.back()) != this)
+            return false;
+
+        mHost->_1a4 = 10;
+        handleBlowDown(this, mEnemyStateBlowDown, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (!rs::isMsgKillByShineGet(message) && !rs::isMsgKillByHomeDemo(message) &&
+        !rs::isMsgSphinxQuizRouteKill(message) && !rs::isMsgKillByMoonRockDemo(message)) {
+        if (rs::isMsgRideOnEnd(message)) {
+            mHost = nullptr;
+            sead::Vector3f local_50;
+            al::addRandomVector(&local_50, sead::Vector3f::zero, 20.0f);
+            local_50.y = 0;
+            if (al::isNearZero(local_50))
+                local_50.set({10.0f, 0.0f, 0.0f});
+
+            al::setVelocityBlowAttackAndTurnToTarget(this, al::getTrans(this) + local_50, 7.0f,
+                                                     30.0f);
+            al::setColliderOffsetY(this, al::getColliderRadius(this));
+            _1bc = al::getTrans(this).y;
+            al::setNerve(this, &NrvKuriboHack.WaitHack);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    if (!al::isNerve(mHost, &NrvKuriboHack.Hack))
+        return mHost->receiveMsg(message, other, self);
+
+    return false;
+}
 
 bool KuriboHack::tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSensor* other,
                                       al::HitSensor* self) {
@@ -1642,8 +1766,166 @@ bool KuriboHack::tryReceiveMsgEatBind(const al::SensorMsg* message, al::HitSenso
     return false;
 }
 
-// bool KuriboHack::tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other,
-//                                      al::HitSensor* self) {}
+bool KuriboHack::tryReceiveMsgNormal(const al::SensorMsg* message, al::HitSensor* other,
+                                     al::HitSensor* self) {
+    if (mHipDropProbeSensor == self && !rs::isMsgPlayerAndCapObjHipDropAll(message))
+        return false;
+
+    if (rs::isMsgRideOnRelease(message)) {
+        ((KuriboHack*)al::getSensorHost(other))->eraseFromHost();
+
+        return true;
+    }
+
+    if (rs::isMsgRideOnStart(message)) {
+        if (_1ac != 0)
+            return false;
+
+        if (!_2e8.isEmpty() && _2e8.back() != this && !al::isMySensor(self, _2e8.back()))
+            return false;
+
+        EnemyCap* enemyCap = mEnemyCap;
+        if (enemyCap && !enemyCap->isBlowDown())
+            enemyCap->startBlowDown(other);
+
+        KuriboHack* kuriboHack = (KuriboHack*)al::getSensorHost(other);
+        kuriboHack->transferGroup(&_2e8);
+        kuriboHack->_2e8.pushBack(this);
+
+        if (isSinking()) {
+            updateColliderOffsetYAll(&kuriboHack->_2e8, kuriboHack, al::getColliderOffsetY(this));
+            kuriboHack->mKuriboStateHack->set_e4(true);
+        } else {
+            kuriboHack->mKuriboStateHack->set_e4(false);
+        }
+
+        mHost = kuriboHack;
+        setNerveRideOnCommon();
+
+        return true;
+    }
+
+    if (rs::isMsgCapAttack(message)) {
+        EnemyCap* enemyCap = mEnemyCap;
+        if (!enemyCap || enemyCap->isBlowDown())
+            return false;
+
+        enemyCap->startBlowDown(other);
+
+        if (mHost) {
+            rs::sendMsgRideOnRelease(al::getHitSensor(mHost, "Body"), self);
+            mHost = nullptr;
+        } else if (_2e8.size() > 0) {
+            KuriboHack* k = _2e8.front();
+            k->transferGroup(&_2e8);
+            al::setNerve(k, &NrvKuriboHack.Fall);
+        }
+
+        rs::requestHitReactionToAttacker(message, self, other);
+
+        if (al::isNerve(this, &NrvKuriboHack.Sink))
+            return true;
+
+        al::setVelocityBlowAttackAndTurnToTarget(this, al::getActorTrans(other), 12.0f, 25.0f);
+        al::setNerve(this, &NrvKuriboHack.DamageCap);
+
+        return true;
+    }
+
+    if (rs::isMsgCapEnableLockOn(message))
+        return isEnableHack() && !isCapWorn() && !mHost;
+
+    if (rs::isMsgCapCancelLockOn(message)) {
+        _1b8 = 10;
+
+        return true;
+    }
+
+    if (rs::isMsgStartHack(message)) {
+        mKuriboStateHack->startHack(self, other, this, al::isNerve(this, &NrvKuriboHack.Sink));
+        addCapToHackDemo();
+        startActionAll(this, _2e8, "Wait");
+        al::setNerve(this, &NrvKuriboHack.Hack);
+
+        return true;
+    }
+
+    if (rs::isMsgSeedAttackBig(message)) {
+        sead::Vector3f local_60 = al::getSensorPos(other) - al::getSensorPos(self);
+        if (al::tryNormalizeOrZero(&local_60) &&
+            local_60.y >= 6.123032e-17f /* sead::Mathf::cos(sead::Mathf::piHalf()) */ &&
+            _2e8.isEmpty()) {
+            EnemyCap* enemyCap = mEnemyCap;
+            if (enemyCap && !enemyCap->isBlowDown())
+                enemyCap->startBlowDown(other);
+
+            trySetHipDropActor(message, other);
+            handlePressDown(this, message, other, self, &mHost, &_2e8);
+
+            return true;
+        }
+    }
+
+    if (rs::isMsgPressDown(message) && _2e8.isEmpty()) {
+        EnemyCap* enemyCap = mEnemyCap;
+        if (enemyCap && !enemyCap->isBlowDown())
+            enemyCap->startBlowDown(other);
+
+        trySetHipDropActor(message, other);
+        handlePressDown(this, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (checkMessageCommon(message)) {
+        handleBlowDown(this, mEnemyStateBlowDown, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    if (rs::isMsgFireDamageAll(message)) {
+        handleKill(this, &mHost, &_2e8, false);
+
+        return true;
+    }
+
+    if (mActorStateSandGeyser->receiveMsgSandGeyser(message, other)) {
+        if (!al::isNerve(this, &NrvKuriboHack.SandGeyser))
+            al::setNerve(this, &NrvKuriboHack.SandGeyser);
+
+        return true;
+    }
+
+    if (tryReceiveMsgPush(message, other, self))
+        return true;
+
+    if (rs::isMsgKuriboFlick(message)) {
+        al::pushAndAddVelocityH(this, other, self, 5.0f);
+        al::setNerve(this, &NrvKuriboHack.Wander);
+
+        return true;
+    }
+
+    if (rs::isMsgKillByShineGet(message) || rs::isMsgKillByHomeDemo(message) ||
+        rs::isMsgSphinxQuizRouteKill(message) || rs::isMsgKillByMoonRockDemo(message)) {
+        notifyKillByShineGetToGroup(message, other, self);
+        prepareKillByShineGet();
+
+        return true;
+    }
+
+    if (rs::isMsgYoshiTongueEatBind(message)) {
+        EnemyCap* enemyCap = mEnemyCap;
+        if (enemyCap && !enemyCap->isBlowDown())
+            enemyCap->startBlowDown(other);
+
+        handleEatBind(this, message, other, self, &mHost, &_2e8);
+
+        return true;
+    }
+
+    return false;
+}
 
 void KuriboHack::transferGroup(sead::OffsetList<KuriboHack>* dst) {
     if (dst->size() <= 0)
