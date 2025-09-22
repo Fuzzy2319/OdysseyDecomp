@@ -606,7 +606,7 @@ void KuriboHack::solveCollisionInHacking(const sead::Vector3f& param_1) {
     for (s32 i = 0; i != strikeArrowCount; i++) {
         fVar9 = fVar7;
 
-        al::HitInfo* hitInfo = **alCollisionUtil::getStrikeArrowInfo(this, i);
+        const al::HitInfo* hitInfo = *alCollisionUtil::getStrikeArrowInfo(this, i);
         if (!hitInfo->triangle.isHostMoved() &&
             al::isWallPolygon(hitInfo->triangle.getNormal(0), al::getGravity(this)))
             fVar9 = sead::Mathf::clampMax(fVar7, hitInfo->_70);

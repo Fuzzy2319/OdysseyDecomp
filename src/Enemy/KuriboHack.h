@@ -142,7 +142,7 @@ private:
     bool mIsGold = false;
     s32 _16c = 0;
     al::CollisionPartsFilterSpecialPurpose* mCollisionPartsFilterSpecialPurpose = nullptr;
-    unsigned char padding1[0xc] = {0};
+    sead::Vector3f _178 = {0.0f, 0.0f, 0.0f};
     f32 mClippingRadius = 0.0f;
     PlayerPushReceiver* mPlayerPushReceiver = nullptr;
     CollisionMultiShape* mCollisionMultiShape = nullptr;
@@ -173,8 +173,8 @@ private:
     sead::Matrix34f mSandSurfaceEffectMtx = sead::Matrix34f::ident;
     bool _2e0 = true;
     sead::OffsetList<KuriboHack> _2e8 = {};
+    void* padding1 = nullptr;
     void* padding2 = nullptr;
-    void* padding3 = nullptr;
     DisregardReceiver* mDisregardReceiver = nullptr;
     u32 _318 = 0;
 };
