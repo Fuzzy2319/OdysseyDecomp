@@ -12,6 +12,16 @@ public:
     void reset();
     void updateAndGenerate();
 
+    void set(const sead::Vector3f& offset, const char* joint, f32 param_2c, f32 param_30,
+             f32 rateAmplitude, f32 maxDistance) {
+        mOffset.set(offset);
+        mJoint = joint;
+        _2c = param_2c;
+        _30 = param_30;
+        mRateAmplitude = rateAmplitude;
+        mMaxDistance = maxDistance;
+    }
+
 private:
     const LiveActor* mParent = nullptr;
     sead::Vector3f mLastJointOffset = sead::Vector3f::zero;
