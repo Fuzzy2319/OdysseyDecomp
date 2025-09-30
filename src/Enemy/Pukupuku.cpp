@@ -89,9 +89,15 @@ static al::EnemyStateBlowDownParam g_7101e62d10 = {"BlowDown", 8.0f, 13.0f, 0.5f
 static al::EnemyStateBlowDownParam g_7101e62d30 = {"BlowDown", 16.0f, 32.0f, 1.0f,
                                                    0.95f,      120,   true};
 static PlayerHackStartShaderParam g_7101e62d5c = {true, -1.0f, 10, 20};
-const f32 g_71018a3dac[] = {0.5f, 0.1f, 45.0f, 0.5f, 0.5f, 45.0f,
-                            0.3f, 0.2f, 15.0f, 0.3f, 0.2f, 15.0f};
-const char* g_7101ca5700[] = {"Tail1", "Tail2", "WingLeft", "WingRight"};
+
+const struct {
+    f32 stability;
+    f32 friction;
+    f32 limitDegree;
+} g_71018a3dac[] = {
+    {0.5f, 0.1f, 45.0f}, {0.5f, 0.5f, 45.0f}, {0.3f, 0.2f, 15.0f}, {0.3f, 0.2f, 15.0f}};
+
+const char* const g_7101ca5700[] = {"Tail1", "Tail2", "WingLeft", "WingRight"};
 
 Pukupuku::Pukupuku(const char* name) : LiveActor(name) {}
 
@@ -161,11 +167,10 @@ void Pukupuku::init(const al::ActorInitInfo& info) {
     for (s32 i = 0; i < 4; i++) {
         al::JointSpringController* jointSpringController =
             al::initJointSpringController(this, g_7101ca5700[i]);
-        jointSpringController->setStability(g_71018a3dac[i * 3]);
-        jointSpringController->setFriction(g_71018a3dac[i * 3 + 1]);
-        jointSpringController->setLimitDegree(g_71018a3dac[i * 3 + 2]);
-        al::StringTmp<128> _ = {"ダイナミクス[%s]", g_7101ca5700[i]};
-        _.cstr();
+        jointSpringController->setStability(g_71018a3dac[i].stability);
+        jointSpringController->setFriction(g_71018a3dac[i].friction);
+        jointSpringController->setLimitDegree(g_71018a3dac[i].limitDegree);
+        al::StringTmp<128>{"ダイナミクス[%s]", g_7101ca5700[i]}.cstr();
         mJointSpringControllers.pushBack(jointSpringController);
     }
 
