@@ -111,7 +111,7 @@ bool isHoldHackAnyButton(const IUsePlayerHack*);
 bool isReleaseHackAnyButton(const IUsePlayerHack*);
 bool isTriggerHackSeparateJump(const IUsePlayerHack*);
 bool isHoldHackSeparateJump(const IUsePlayerHack*);
-void getHackStickRotateSpeed(const IUsePlayerHack*);
+f32 getHackStickRotateSpeed(const IUsePlayerHack*);
 bool isTriggerHackSwing(const IUsePlayerHack*);
 bool isTriggerHackSwingDirLeft(const IUsePlayerHack*);
 bool isTriggerHackSwingDirRight(const IUsePlayerHack*);
