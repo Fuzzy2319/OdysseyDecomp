@@ -548,3 +548,70 @@ void Pukupuku::onWaterOut() {
         al::tryFindAreaObjWithFilter(this, "WaterArea", al::getTrans(this), &filterWater);
     al::AreaObj* area2 = al::tryFindAreaObjWithFilter(this, "WaterArea", _29c, &filterWaterIgnore);
 }
+
+bool Pukupuku::tryAddVelocityWaterSurfaceJumpOut() {
+    if (!checkJumpOutCondition())
+        return false;
+
+    sead::Vector3f frontDir;
+    al::calcFrontDir(&frontDir, this);
+    frontDir.y = 0.0f;
+
+    if (al::tryNormalizeOrZero(&frontDir))
+        al::setVelocity(this, sead::Vector3f::ey * 65.0f + frontDir * 15.0f);
+
+    return true;
+}
+
+// NON_MATCHING
+void FUN_7100178da4(f32 param_1, Pukupuku* param_2) {
+    sead::Vector3f frontDir;
+    al::calcFrontDir(&frontDir, param_2);
+
+    sead::Vector3f velocity;
+    velocity.set(frontDir);
+
+    f32 dot = frontDir.dot(sead::Vector3f::ey);
+    sead::Mathf::cos(sead::Mathf::pi() / 12.0f);
+    if (!(dot > /* sead::Mathf::cos(sead::Mathf::pi() / 12.0f) */ 0.9659258f)) {
+        dot = sead::Vector3f::ey.dot(-frontDir);
+        sead::Mathf::cos(sead::Mathf::pi() / 12.0f);
+        if (dot > /* sead::Mathf::cos(sead::Mathf::pi() / 12.0f) */ 0.9659258f)
+            velocity.set(-sead::Vector3f::ey);
+    } else {
+        velocity.set(sead::Vector3f::ey);
+    }
+
+    al::addVelocity(param_2, velocity * param_1);
+}
+
+// NON_MATCHING
+void Pukupuku::approachSurface() {
+    sead::Vector3f upDir;
+    al::calcUpDir(&upDir, this);
+
+    f32 angle = sead::Mathf::clamp((al::calcAngleDegree(upDir, sead::Vector3f::ey) - 15.0f) / 30.0f,
+                                   0.0f, 1.0f);
+
+    // clang-format off
+    al::approachWaterSurfaceSpringDumper(this, mWaterSurfaceFinder, 5.0f, 12.0f, 1.0f,
+                                         (1.0f - angle) * 0.008f
+                                            + angle * 0.002f,
+                                         (1.0f - angle) * 0.9f
+                                            + angle * 0.988f);
+    // clang-format on
+}
+
+// bool Pukupuku::updatePoseSwim() {}
+
+bool Pukupuku::isTriggerSwimDash() const {
+    return mIsTriggerSwimDash;
+}
+
+// void Pukupuku::onWaterIn() {}
+
+// void Pukupuku::exeCaptureSwim() {}
+
+// void Pukupuku::exeCaptureReactionWall() {}
+
+// bool Pukupuku::checkJumpOutCondition() {}
