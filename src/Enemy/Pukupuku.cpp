@@ -4,6 +4,7 @@
 #include "Library/Base/StringUtil.h"
 #include "Library/Effect/EffectSystemInfo.h"
 #include "Library/Fluid/JointRippleGenerator.h"
+#include "Library/Item/ItemUtil.h"
 #include "Library/Joint/JointControllerKeeper.h"
 #include "Library/Joint/JointSpringController.h"
 #include "Library/LiveActor/ActorActionFunction.h"
@@ -35,6 +36,7 @@
 #include "Npc/SphinxQuizRouteKillExecutor.h"
 #include "Player/HackerStateNormalJump.h"
 #include "Player/PlayerHackStartShaderCtrl.h"
+#include "Util/DemoUtil.h"
 #include "Util/Hack.h"
 
 namespace {
@@ -615,3 +617,92 @@ bool Pukupuku::isTriggerSwimDash() const {
 // void Pukupuku::exeCaptureReactionWall() {}
 
 // bool Pukupuku::checkJumpOutCondition() {}
+
+void Pukupuku::updateCameraCaptureWait() {
+    sead::Vector3f frontDir;
+    al::calcFrontDir(&frontDir, this);
+
+    if (al::isParallelDirection(frontDir, sead::Vector3f::ey))
+        return;
+
+    frontDir.y = 0.0f;
+    frontDir.normalize();
+
+    _140.set(frontDir);
+}
+
+// void Pukupuku::exeCaptureWait() {}
+
+// void Pukupuku::exeCaptureAttack() {}
+
+// void Pukupuku::exeCaptureRolling() {}
+
+bool Pukupuku::updateGroundTimeLimit() {
+    if (_150 < 600)
+        _150++;
+
+    return _150 == 600;
+}
+
+// void Pukupuku::exeCaptureWaitGround() {}
+
+void FUN_710017b094(Pukupuku* param_1, const sead::Vector3f& param_2) {
+    sead::Vector3f local_30 = param_2;
+    if (!al::tryNormalizeOrZero(&local_30))
+        return;
+
+    al::turnQuatZDirRadian(al::getQuatPtr(param_1), al::getQuat(param_1), local_30,
+                           sead::Mathf::deg2rad(10.0f));
+    sead::Vector3f frontDir;
+    al::calcFrontDir(&frontDir, param_1);
+
+    if (al::isParallelDirection(frontDir, sead::Vector3f::ey))
+        al::makeQuatUpNoSupport(al::getQuatPtr(param_1), sead::Vector3f::ey);
+    else
+        al::makeQuatUpFront(al::getQuatPtr(param_1), sead::Vector3f::ey, frontDir);
+}
+
+// void Pukupuku::exeCaptureJumpGround() {}
+
+// void Pukupuku::exeCaptureLandGround() {}
+
+void Pukupuku::exeBlowDown() {
+    if (al::updateNerveState(this)) {
+        if (!al::isNerve(this, &NrvPukupuku.BlowDownFromCapture) &&
+            !al::isNerve(this, &NrvPukupuku.BlowDownWithoutMsg)) {
+            al::appearItem(this);
+        }
+
+        al::startHitReaction(this, "死亡");
+        al::setNerve(this, &NrvPukupuku.Revive);
+    }
+}
+
+void Pukupuku::exeTrample() {
+    if (al::isFirstStep(this)) {
+        al::setVelocityZero(this);
+        al::startAction(this, "PressDown");
+    }
+
+    if (al::isActionEnd(this)) {
+        al::appearItem(this);
+        al::startHitReaction(this, "死亡");
+        al::setNerve(this, &NrvPukupuku.Revive);
+    }
+}
+
+void Pukupuku::exeRevive() {
+    if (al::updateNerveStateAndNextNerve(this, &NrvPukupuku.Wait)) {
+        al::resetMtxPosition(this, _1a0);
+        if (al::isExistRail(this))
+            al::setSyncRailToNearestPos(this);
+        _118 = nullptr;
+    }
+}
+
+void Pukupuku::exeDemoWaitToRevive() {
+    if (!rs::isActiveDemo(this)) {
+        al::showModelIfHide(this);
+        al::setNerve(this, &NrvPukupuku.Revive);
+    }
+}
