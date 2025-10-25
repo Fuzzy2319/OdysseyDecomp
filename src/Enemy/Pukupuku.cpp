@@ -664,7 +664,14 @@ void FUN_710017b094(Pukupuku* param_1, const sead::Vector3f& param_2) {
 
 // void Pukupuku::exeCaptureJumpGround() {}
 
-// void Pukupuku::exeCaptureLandGround() {}
+void Pukupuku::exeCaptureLandGround() {
+    if (updateGroundTimeLimit()) {
+        endCapture();
+        revive(2);
+
+        return;
+    }
+}
 
 void Pukupuku::exeBlowDown() {
     if (al::updateNerveState(this)) {
