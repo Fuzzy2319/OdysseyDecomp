@@ -47,6 +47,64 @@ WorldList::WorldList() {
 
         mWorldList.pushBack(entry);
     }
+
+    al::ByamlIter worldListDbIter = {
+        al::tryGetBymlFromArcName("SystemData/WorldList", "WorldListFromDb")};
+    s32 worldDbCount = worldListDbIter.getSize();
+    for (s32 i = 0; i < worldDbCount; i++) {
+        al::ByamlIter worldIter;
+        worldListDbIter.tryGetIterByIndex(&worldIter, i);
+        al::ByamlIter stageListIter;
+        worldIter.tryGetIterByKey(&stageListIter, "StageList");
+
+        mWorldList[i]->stageList.allocBuffer(stageListIter.getSize(), nullptr);
+
+        for (s32 j = 0; j < stageListIter.getSize(); j++) {
+            al::ByamlIter stageIter;
+            stageListIter.tryGetIterByIndex(&stageIter, j);
+
+            const char* name = nullptr;
+            stageIter.tryGetStringByKey(&name, "name");
+
+            StageDBEntry* stageEntry = new StageDBEntry();
+            stageEntry->name.format("%s", name);
+
+            const char* category = nullptr;
+            if (stageIter.tryGetStringByKey(&category, "category")) {
+                stageEntry->category.format("%s", category);
+
+                if (al::isEqualString(stageEntry->category.cstr(), "MainStage"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "MainRouteStage"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "ExStage"))
+                    stageEntry->useScenarioNo = 1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "SmallStage"))
+                    stageEntry->useScenarioNo = 1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "PathwayStage"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "ShopStage"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "MoonExStage"))
+                    stageEntry->useScenarioNo = 1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "Demo"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "MoonFarSideExStage"))
+                    stageEntry->useScenarioNo = 2;
+                else if (al::isEqualString(stageEntry->category.cstr(), "BossRevenge"))
+                    stageEntry->useScenarioNo = 1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "MiniGame"))
+                    stageEntry->useScenarioNo = -1;
+                else if (al::isEqualString(stageEntry->category.cstr(), "Zone"))
+                    stageEntry->useScenarioNo = -1;
+            } else {
+                stageEntry->category = "\0";
+                stageEntry->useScenarioNo = -1;
+            }
+
+            mWorldList[i]->stageList.pushBack(stageEntry);
+        }
+    }
 }
 
 s32 WorldList::getWorldNum() const {
@@ -78,7 +136,7 @@ s32 WorldList::tryFindWorldIndexByStageName(const char* stageName) const {
 
     for (s32 i = 0; i < mWorldList.size(); i++)
         for (s32 j = 0; j < mWorldList[i]->stageList.size(); j++)
-            if (al::isEqualString(stageName, mWorldList[i]->stageList[j]->stageName.cstr()))
+            if (al::isEqualString(stageName, mWorldList[i]->stageList[j]->name.cstr()))
                 return i;
 
     return -1;
@@ -129,7 +187,7 @@ s32 WorldList::findUseScenarioNo(const char* stageName) const {
             WorldListEntry* world = mWorldList[i];
             s32 stageListSize = world->stageList.size();
             for (s32 j = 0; j < stageListSize; j++)
-                if (al::isEqualString(world->stageList[j]->stageName.cstr(), stageName))
+                if (al::isEqualString(world->stageList[j]->name.cstr(), stageName))
                     return world->stageList[j]->useScenarioNo;
         }
     }
@@ -147,10 +205,10 @@ bool WorldList::checkNeedTreasureMessageStage(const char* stageName) const {
         WorldListEntry* world = mWorldList[i];
         s32 stageListSize = world->stageList.size();
         for (s32 j = 0; j < stageListSize; j++) {
-            if (!al::isEqualString(world->stageList[j]->stageName.cstr(), stageName))
+            if (!al::isEqualString(world->stageList[j]->name.cstr(), stageName))
                 continue;
 
-            const char* category = world->stageList[j]->stageCategory.cstr();
+            const char* category = world->stageList[j]->category.cstr();
             if (!al::isEqualString(category, "BossRevenge") &&
                 !al::isEqualString(category, "MainRouteStage") &&
                 !al::isEqualString(category, "MainStage") &&

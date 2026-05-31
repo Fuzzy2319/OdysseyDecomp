@@ -9,8 +9,8 @@ struct StagePosInfo;
 struct ShinePosInfo;
 
 struct StageDBEntry {
-    sead::FixedSafeString<0x80> stageName;
-    sead::FixedSafeString<0x40> stageCategory;
+    sead::FixedSafeString<0x80> name;
+    sead::FixedSafeString<0x40> category;
     s32 useScenarioNo;
 };
 
