@@ -241301,37 +241301,37 @@ Library/Fluid/RippleCtrl.o:
   - offset: 0x89e104
     size: 8
     label: _ZNK2al12ParameterV3f15getParamTypeStrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e10c
     size: 8
     label: _ZNK2al12ParameterV3f12getParamTypeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e114
     size: 8
     label: _ZNK2al9ParameterIN4sead7Vector3IfEEE3ptrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e11c
     size: 8
     label: _ZN2al9ParameterIN4sead7Vector3IfEEE3ptrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e124
     size: 8
     label: _ZNK2al9ParameterIN4sead7Vector3IfEEE4sizeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e12c
     size: 8
     label: _ZNK2al9ParameterIN4sead7Vector3IfEEE15getParamTypeStrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e134
     size: 8
     label: _ZNK2al9ParameterIN4sead7Vector3IfEEE12getParamTypeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e13c
     size: 8
@@ -241371,42 +241371,42 @@ Library/Fluid/RippleCtrl.o:
   - offset: 0x89e174
     size: 516
     label: _ZN2al9ParameterIN4sead15FixedSafeStringILi64EEEEC2ERKS3_RKNS1_14SafeStringBaseIcEESA_SA_PNS_12ParameterObjEb
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e378
     size: 8
     label: _ZNK2al17ParameterString6415getParamTypeStrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e380
     size: 8
     label: _ZNK2al17ParameterString6412getParamTypeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e388
     size: 8
     label: _ZNK2al9ParameterIN4sead15FixedSafeStringILi64EEEE3ptrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e390
     size: 8
     label: _ZN2al9ParameterIN4sead15FixedSafeStringILi64EEEE3ptrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e398
     size: 8
     label: _ZNK2al9ParameterIN4sead15FixedSafeStringILi64EEEE4sizeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e3a0
     size: 8
     label: _ZNK2al9ParameterIN4sead15FixedSafeStringILi64EEEE15getParamTypeStrEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x89e3a8
     size: 8
     label: _ZNK2al9ParameterIN4sead15FixedSafeStringILi64EEEE12getParamTypeEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
 Library/Fluid/RippleFixMapParts.o:
   '.text':
@@ -265007,23 +265007,23 @@ Library/Model/SkyDirector.o:
     label:
     - _ZN2al8SkyParamC1Ev
     - _ZN2al8SkyParamC2Ev
-    status: NotDecompiled
+    status: NonMatchingMajor
   - offset: 0x950c3c
     size: 188
     label: _ZNK2al8SkyParam7isEqualERKNS_16IUseRequestParamE
-    status: NotDecompiled
+    status: Matching
   - offset: 0x950cf8
     size: 12
     label: _ZNK2al8SkyParam9getRotateEv
-    status: NotDecompiled
+    status: Matching
   - offset: 0x950d04
     size: 48
     label: _ZNK2al8SkyParam10getSkyNameEv
-    status: NotDecompiled
+    status: Matching
   - offset: 0x950d34
     size: 12
     label: _ZNK2al8SkyParam16getStarIntensityEv
-    status: NotDecompiled
+    status: Matching
   - offset: 0x950d40
     size: 320
     label:
@@ -265077,17 +265077,17 @@ Library/Model/SkyDirector.o:
   - offset: 0x951398
     size: 12
     label: _ZNK2al8SkyParam12getParamNameEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x9513a4
     size: 8
     label: _ZN2al8SkyParam11getParamObjEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
   - offset: 0x9513ac
     size: 8
     label: _ZNK2al8SkyParam11getParamObjEv
-    status: NotDecompiled
+    status: Matching
     lazy: true
 Library/Model/SubMeshRangeArray.o:
   '.text':
@@ -291364,15 +291364,15 @@ Project/Base/ParamRequestInterp.o:
   - offset: 0xa45558
     size: 104
     label: _ZNK2al16IUseRequestParam7isEqualERKS0_
-    status: NotDecompiled
+    status: Matching
   - offset: 0xa455c0
     size: 104
     label: _ZN2al16IUseRequestParam4copyERKS0_
-    status: NotDecompiled
+    status: Matching
   - offset: 0xa45628
     size: 164
     label: _ZN2al16IUseRequestParam10copyInterpERKS0_S2_f
-    status: NotDecompiled
+    status: Matching
   - offset: 0xa456cc
     size: 44
     label:
